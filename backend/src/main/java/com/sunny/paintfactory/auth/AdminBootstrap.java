@@ -21,7 +21,7 @@ public class AdminBootstrap implements ApplicationRunner {
     public AdminBootstrap(JdbcTemplate jdbc, PasswordEncoder encoder,
         @Value("${app.bootstrap-admin.username:admin}") String username,
         @Value("${app.bootstrap-admin.password:}") String password,
-        @Value("${app.bootstrap-admin.display-name:系统管理员}") String displayName) {
+        @Value("${app.bootstrap-admin.display-name:System Administrator}") String displayName) {
         this.jdbc = jdbc; this.encoder = encoder; this.username = username; this.password = password; this.displayName = displayName;
     }
 

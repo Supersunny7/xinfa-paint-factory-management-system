@@ -32,17 +32,17 @@ public class AuthController {
             (rs, row) -> map("id",rs.getLong(1),"username",rs.getString(2),"hash",rs.getString(3),"displayName",rs.getString(4),"role",rs.getString(5),"status",rs.getString(6),"attempts",rs.getInt(7),"locked",rs.getTimestamp(8)!=null,"mustChangePassword",rs.getBoolean(9)), request.username().trim());
         if (users.isEmpty()) throw unauthorized();
         Map<String,Object> user=users.get(0);
-        if (!"ENABLED".equals(user.get("status"))) throw new ResponseStatusException(HttpStatus.LOCKED,"账号已停用，请联系管理员");
-        if ((boolean)user.get("locked")) throw new ResponseStatusException(HttpStatus.LOCKED,"密码连续输错10次，账号已锁定，请联系管理员解锁");
+        if (!"ENABLED".equals(user.get("status"))) throw new ResponseStatusException(HttpStatus.LOCKED,"This account is disabled. Contact an administrator");
+        if ((boolean)user.get("locked")) throw new ResponseStatusException(HttpStatus.LOCKED,"This account was locked after 10 failed sign-in attempts. Contact an administrator to unlock it");
         if (!encoder.matches(request.password(), user.get("hash").toString())) {
             int attempts=((Number)user.get("attempts")).intValue()+1;
             LocalDateTime lockedAt=attempts>=MAX_FAILED_ATTEMPTS?LocalDateTime.now():null;
             jdbc.update("UPDATE sys_user SET failed_login_attempts=?,locked_at=?,updated_at=? WHERE id=?",attempts,lockedAt,LocalDateTime.now(),user.get("id"));
             if (lockedAt!=null) {
-                jdbc.update("INSERT INTO master_data_audit_log(entity_type,entity_id,entity_code,entity_name,action,details,operator_user_id,operator_name_snapshot,created_at) VALUES('users',?,?,?,'LOCK','连续输错密码10次，系统自动锁定',?,?,?)",user.get("id"),user.get("username"),user.get("displayName"),user.get("id"),user.get("displayName"),lockedAt);
-                throw new ResponseStatusException(HttpStatus.LOCKED,"密码连续输错10次，账号已锁定，请联系管理员解锁");
+                jdbc.update("INSERT INTO master_data_audit_log(entity_type,entity_id,entity_code,entity_name,action,details,operator_user_id,operator_name_snapshot,created_at) VALUES('users',?,?,?,'LOCK','Automatically locked after 10 failed sign-in attempts',?,?,?)",user.get("id"),user.get("username"),user.get("displayName"),user.get("id"),user.get("displayName"),lockedAt);
+                throw new ResponseStatusException(HttpStatus.LOCKED,"This account was locked after 10 failed sign-in attempts. Contact an administrator to unlock it");
             }
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED,"用户名或密码错误，还可尝试"+(MAX_FAILED_ATTEMPTS-attempts)+"次");
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED,"Incorrect username or password. "+(MAX_FAILED_ATTEMPTS-attempts)+" attempts remaining");
         }
         jdbc.update("UPDATE sys_user SET failed_login_attempts=0,locked_at=NULL,updated_at=? WHERE id=?",LocalDateTime.now(),user.get("id"));
         return ApiResponse.success(map("token",jwt.issue(user.get("username").toString()),"username",user.get("username"),"displayName",user.get("displayName"),"role",user.get("role"),"mustChangePassword",user.get("mustChangePassword")));
@@ -51,15 +51,15 @@ public class AuthController {
     @PostMapping("/change-password")
     public ApiResponse<Void> changePassword(@Valid @RequestBody ChangePasswordRequest request, Authentication auth) {
         var rows=jdbc.query("SELECT id,password_hash FROM sys_user WHERE username=? AND status='ENABLED' AND locked_at IS NULL",(rs,n)->map("id",rs.getLong(1),"hash",rs.getString(2)),auth.getName());
-        if(rows.isEmpty())throw new ResponseStatusException(HttpStatus.LOCKED,"账号不可用，请联系管理员");
-        if(!encoder.matches(request.currentPassword(),rows.get(0).get("hash").toString()))throw new ResponseStatusException(HttpStatus.BAD_REQUEST,"当前密码不正确");
-        if(encoder.matches(request.newPassword(),rows.get(0).get("hash").toString()))throw new ResponseStatusException(HttpStatus.BAD_REQUEST,"新密码不能与当前密码相同");
+        if(rows.isEmpty())throw new ResponseStatusException(HttpStatus.LOCKED,"This account is unavailable. Contact an administrator");
+        if(!encoder.matches(request.currentPassword(),rows.get(0).get("hash").toString()))throw new ResponseStatusException(HttpStatus.BAD_REQUEST,"The current password is incorrect");
+        if(encoder.matches(request.newPassword(),rows.get(0).get("hash").toString()))throw new ResponseStatusException(HttpStatus.BAD_REQUEST,"The new password must differ from the current password");
         jdbc.update("UPDATE sys_user SET password_hash=?,must_change_password=0,failed_login_attempts=0,version=version+1,updated_at=? WHERE id=?",encoder.encode(request.newPassword()),LocalDateTime.now(),rows.get(0).get("id"));
         return ApiResponse.success(null);
     }
 
-    private static ResponseStatusException unauthorized(){return new ResponseStatusException(HttpStatus.UNAUTHORIZED,"用户名或密码错误");}
+    private static ResponseStatusException unauthorized(){return new ResponseStatusException(HttpStatus.UNAUTHORIZED,"Incorrect username or password");}
     private static Map<String,Object> map(Object... values){Map<String,Object> result=new LinkedHashMap<>();for(int i=0;i<values.length;i+=2)result.put((String)values[i],values[i+1]);return result;}
     public record LoginRequest(@NotBlank String username,@NotBlank String password){}
-    public record ChangePasswordRequest(@NotBlank String currentPassword,@NotBlank @Pattern(regexp="^(?=.*[A-Za-z])(?=.*\\d).{8,64}$",message="新密码至少8位，并同时包含字母和数字") String newPassword){}
+    public record ChangePasswordRequest(@NotBlank String currentPassword,@NotBlank @Pattern(regexp="^(?=.*[A-Za-z])(?=.*\\d).{8,64}$",message="The new password must be 8 to 64 characters and include both letters and numbers") String newPassword){}
 }

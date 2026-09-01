@@ -26,7 +26,7 @@ public class SecurityConfig {
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .exceptionHandling(errors -> errors.authenticationEntryPoint(
                 (request, response, exception) -> response.sendError(HttpServletResponse.SC_UNAUTHORIZED))
-                .accessDeniedHandler((request,response,exception)->response.sendError(HttpServletResponse.SC_FORBIDDEN,"无权执行此操作")))
+                .accessDeniedHandler((request,response,exception)->response.sendError(HttpServletResponse.SC_FORBIDDEN,"You are not authorized to perform this operation")))
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/error", "/actuator/health", "/api/v1/system/health", "/api/v1/auth/login").permitAll()
                 .requestMatchers("/api/v1/auth/change-password").authenticated()
