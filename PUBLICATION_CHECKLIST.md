@@ -46,7 +46,7 @@ The English source-only copy has completed localization and automated verificati
 - [x] Add English setup, architecture, business-flow, and testing documentation.
 - [x] Add backend and frontend GitHub Actions workflows.
 - [ ] Decide on a license before publication.
-- [ ] Run browser acceptance in English and capture public-safe screenshots. Backend tests, frontend build, and a fresh 23-migration database have passed.
+- [ ] Complete browser acceptance for every business workflow. Login, dashboard, sales-order list, product catalog, and customer master data have passed against an isolated English demo database; public-safe desktop screenshots are included. Backend tests, frontend build, and a fresh 23-migration database have passed.
 - [x] Run a final tracked-source language scan, secret review, and Git diff check.
 
 ## Files requiring special review

@@ -62,7 +62,19 @@ The exact public include/exclude list is documented in [docs/PUBLIC_REPOSITORY_C
 
 Only fictional records may be added to a public build. The optional [`demo/demo-data.sql`](demo/demo-data.sql) package is safe for local demonstrations. New English screenshots must be captured from a freshly migrated database populated only with that package.
 
-Screenshots are intentionally not included yet. They must be captured during the final browser acceptance run so that the published images match the current English build and contain only fictional data.
+The screenshots below were captured at a 1920 × 1080 desktop viewport from a fresh isolated database populated only with the fictional demo package.
+
+### Dashboard
+
+![Xinfa Paint Factory dashboard](docs/screenshots/dashboard.png)
+
+### Product catalog
+
+![English fictional product catalog](docs/screenshots/product-catalog.png)
+
+### Customer master data
+
+![English fictional customer records](docs/screenshots/customers.png)
 
 ## Security and privacy
 
