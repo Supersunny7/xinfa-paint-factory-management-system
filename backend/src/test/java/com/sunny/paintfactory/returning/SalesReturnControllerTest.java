@@ -41,22 +41,22 @@ class SalesReturnControllerTest {
             if(sql.startsWith("SELECT r.id,r.return_no")) return List.of();
             if(sql.startsWith("SELECT r.return_no,r.return_date")) {
                 when(rs.getString(1)).thenReturn("XT260820-001");when(rs.getDate(2)).thenReturn(java.sql.Date.valueOf("2026-08-20"));
-                when(rs.getString(3)).thenReturn("业务员甲");when(rs.getString(4)).thenReturn("C001");when(rs.getString(5)).thenReturn("测试客户");
-                when(rs.getInt(6)).thenReturn(1);when(rs.getString(7)).thenReturn("P001");when(rs.getString(8)).thenReturn("测试油漆");
-                when(rs.getString(9)).thenReturn("5kg");when(rs.getString(10)).thenReturn("蓝色");when(rs.getString(11)).thenReturn("桶");
+                when(rs.getString(3)).thenReturn("Salesperson A");when(rs.getString(4)).thenReturn("C001");when(rs.getString(5)).thenReturn("Test Customer");
+                when(rs.getInt(6)).thenReturn(1);when(rs.getString(7)).thenReturn("P001");when(rs.getString(8)).thenReturn("Test Paint");
+                when(rs.getString(9)).thenReturn("5 kg");when(rs.getString(10)).thenReturn("Blue");when(rs.getString(11)).thenReturn("Pail");
                 when(rs.getBigDecimal(12)).thenReturn(new BigDecimal("-2"));when(rs.getBigDecimal(13)).thenReturn(new BigDecimal("10"));
                 when(rs.getBigDecimal(14)).thenReturn(new BigDecimal("12"));when(rs.getBigDecimal(15)).thenReturn(new BigDecimal("-20"));
-                when(rs.getString(16)).thenReturn("总表备注");when(rs.getString(17)).thenReturn("明细备注");
+                when(rs.getString(16)).thenReturn("Document remark");when(rs.getString(17)).thenReturn("Line remark");
                 return List.of(mapper.mapRow(rs,0));
             }
-            throw new AssertionError("未处理的查询："+sql);
+            throw new AssertionError("Unhandled query: "+sql);
         });
 
         var detail=new SalesReturnController(jdbc).getWarehouse(1).data();
         var items=(List<java.util.Map<String,Object>>)detail.get("items");
         assertThat(items).singleElement().satisfies(item->{
             assertThat(item).containsEntry("returnNo","XT260820-001").containsEntry("skuCode","P001")
-                    .containsEntry("quantity",new BigDecimal("-2")).containsEntry("lineRemark","明细备注");
+                    .containsEntry("quantity",new BigDecimal("-2")).containsEntry("lineRemark","Line remark");
         });
     }
 
@@ -89,18 +89,18 @@ class SalesReturnControllerTest {
                 when(rs.getLong(1)).thenReturn(101L);
                 when(rs.getLong(2)).thenReturn(1001L);
                 when(rs.getString(3)).thenReturn("P001");
-                when(rs.getString(4)).thenReturn("测试货品");
+                when(rs.getString(4)).thenReturn("Test Product");
                 when(rs.getBigDecimal(5)).thenReturn(new BigDecimal("3"));
                 return List.of(mapper.mapRow(rs,0));
             }
-            throw new AssertionError("未处理的查询："+sql);
+            throw new AssertionError("Unhandled query: "+sql);
         });
         when(jdbc.queryForObject(anyString(),any(Class.class),any(Object[].class))).thenAnswer(invocation->{
             String sql=invocation.getArgument(0);
             if(sql.startsWith("SELECT COUNT(*) FROM sales_return")) return 0;
             if(sql.startsWith("SELECT total_stock")) return new BigDecimal("7");
             if(sql.startsWith("SELECT id FROM sys_user")) return 9L;
-            throw new AssertionError("未处理的单值查询："+sql);
+            throw new AssertionError("Unhandled scalar query: "+sql);
         });
         when(jdbc.update(anyString(),any(Object[].class))).thenReturn(1);
         SalesReturnController controller=new SalesReturnController(jdbc);
@@ -131,26 +131,26 @@ class SalesReturnControllerTest {
                 when(rs.getLong(1)).thenReturn(102L);
                 when(rs.getLong(2)).thenReturn(1002L);
                 when(rs.getString(3)).thenReturn("P002");
-                when(rs.getString(4)).thenReturn("回滚测试货品");
+                when(rs.getString(4)).thenReturn("Rollback Test Product");
                 when(rs.getBigDecimal(5)).thenReturn(new BigDecimal("2"));
                 return List.of(mapper.mapRow(rs,0));
             }
-            throw new AssertionError("未处理的查询："+sql);
+            throw new AssertionError("Unhandled query: "+sql);
         });
         when(jdbc.queryForObject(anyString(),any(Class.class),any(Object[].class))).thenAnswer(invocation->{
             String sql=invocation.getArgument(0);
             if(sql.startsWith("SELECT COUNT(*) FROM sales_return")) return 0;
             if(sql.startsWith("SELECT total_stock")) return new BigDecimal("8");
             if(sql.startsWith("SELECT id FROM sys_user")) return 9L;
-            throw new AssertionError("未处理的单值查询："+sql);
+            throw new AssertionError("Unhandled scalar query: "+sql);
         });
         when(jdbc.update(contains("INSERT INTO inventory_movement"),any(Object[].class)))
-            .thenThrow(new RuntimeException("模拟库存流水写入失败"));
+            .thenThrow(new RuntimeException("Simulated inventory-movement insert failure"));
         SalesReturnController controller=new SalesReturnController(jdbc);
 
         assertThatThrownBy(()->controller.approveWarehouse(2,new SalesReturnController.VersionRequest(0),authentication()))
             .isInstanceOf(RuntimeException.class)
-            .hasMessageContaining("模拟库存流水写入失败");
+            .hasMessageContaining("Simulated inventory-movement insert failure");
 
         verify(jdbc).update(contains("UPDATE product_sku SET total_stock=?"),any(Object[].class));
         verify(jdbc).update(contains("INSERT INTO inventory_movement"),any(Object[].class));

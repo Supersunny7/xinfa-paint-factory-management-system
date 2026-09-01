@@ -50,7 +50,7 @@ public class SalesReturnController {
         if (!status.isBlank()) { where.append(" AND r.status=?"); args.add(status); }
         if ("PRINTED".equals(printStatus)) where.append(" AND r.printed_at IS NOT NULL");
         else if ("UNPRINTED".equals(printStatus)) where.append(" AND r.printed_at IS NULL");
-        else if (!printStatus.isBlank()) throw bad("销售退货打印状态无效");
+        else if (!printStatus.isBlank()) throw bad("Invalid sales-return print status");
         if (!keyword.isBlank()) {
             where.append(" AND (r.return_no LIKE ? OR r.customer_code_snapshot LIKE ? OR r.customer_name_snapshot LIKE ?)");
             String like="%"+keyword.trim()+"%"; args.add(like); args.add(like); args.add(like);
@@ -80,7 +80,7 @@ public class SalesReturnController {
                 "createdAt",rs.getTimestamp(15).toLocalDateTime(),"updatedAt",rs.getTimestamp(16).toLocalDateTime(),
                 "printedAt",rs.getTimestamp(17)==null?null:rs.getTimestamp(17).toLocalDateTime(),"printCount",rs.getInt(18),
                 "approvedAt",rs.getTimestamp(19)==null?null:rs.getTimestamp(19).toLocalDateTime()),id);
-        if(rows.isEmpty()) throw notFound("未找到销售退货单");
+        if(rows.isEmpty()) throw notFound("Sales return not found");
         Map<String,Object> result=rows.get(0); result.put("items",returnItems(id));
         return ApiResponse.success(result);
     }
@@ -100,13 +100,13 @@ public class SalesReturnController {
     @Transactional
     public ApiResponse<Map<String,Object>> updateReturn(@PathVariable long id,@Valid @RequestBody UpdateReturnRequest r,Authentication auth) {
         var current=jdbc.query("SELECT r.status,r.version,r.printed_at,EXISTS(SELECT 1 FROM return_warehouse_return wr WHERE wr.sales_return_id=r.id) FROM sales_return r WHERE r.id=? FOR UPDATE",(rs,n)->new Object[]{rs.getString(1),rs.getInt(2),rs.getTimestamp(3),rs.getBoolean(4)},id);
-        if(current.isEmpty()) throw notFound("未找到销售退货单");
-        if(!"DRAFT".equals(current.get(0)[0])||current.get(0)[2]!=null) throw conflict("已审核或已打印的销售退货单不能修改");
-        if(Boolean.TRUE.equals(current.get(0)[3])) throw conflict("已加入退货入仓单的销售退货单不能修改");
-        if(((Number)current.get(0)[1]).intValue()!=r.version()) throw conflict("销售退货单已被其他人修改，请刷新");
+        if(current.isEmpty()) throw notFound("Sales return not found");
+        if(!"DRAFT".equals(current.get(0)[0])||current.get(0)[2]!=null) throw conflict("An approved or printed sales return cannot be edited");
+        if(Boolean.TRUE.equals(current.get(0)[3])) throw conflict("A sales return assigned to a return-warehouse document cannot be edited");
+        if(((Number)current.get(0)[1]).intValue()!=r.version()) throw conflict("The sales return was changed by another user. Refresh and try again");
         Prepared p=prepare(r.data(),id); long uid=userId(auth); LocalDateTime now=LocalDateTime.now();
         int changed=jdbc.update("UPDATE sales_return SET return_date=?,source_sales_order_id=?,customer_id=?,customer_code_snapshot=?,customer_name_snapshot=?,salesperson_id=?,salesperson_name_snapshot=?,settlement_method=?,total_amount=?,remark=?,updated_by=?,updated_at=?,version=version+1 WHERE id=? AND status='DRAFT' AND printed_at IS NULL AND version=?",r.data().returnDate(),r.data().sourceSalesOrderId(),r.data().customerId(),p.customerCode(),p.customerName(),r.data().salespersonId(),p.salespersonName(),p.settlement(),p.total(),r.data().remark(),uid,now,id,r.version());
-        if(changed!=1) throw conflict("销售退货单状态已变化，请刷新");
+        if(changed!=1) throw conflict("The sales-return status has changed. Refresh and try again");
         jdbc.update("DELETE FROM sales_return_item WHERE sales_return_id=?",id); insertReturnItems(id,p.items());
         return ApiResponse.success(map("id",id,"totalAmount",p.total(),"version",r.version()+1));
     }
@@ -115,9 +115,9 @@ public class SalesReturnController {
     @Transactional
     public ApiResponse<Map<String,Object>> printReturn(@PathVariable long id,@RequestBody VersionRequest r,Authentication auth) {
         var rows=jdbc.query("SELECT status,version,printed_at,print_count FROM sales_return WHERE id=? FOR UPDATE",(rs,n)->new Object[]{rs.getString(1),rs.getInt(2),rs.getTimestamp(3),rs.getInt(4)},id);
-        if(rows.isEmpty()) throw notFound("未找到销售退货单"); Object[] x=rows.get(0);
-        if("VOIDED".equals(x[0])) throw conflict("已作废销售退货单不能打印");
-        if(((Number)x[1]).intValue()!=r.version()) throw conflict("销售退货单已变化，请刷新");
+        if(rows.isEmpty()) throw notFound("Sales return not found"); Object[] x=rows.get(0);
+        if("VOIDED".equals(x[0])) throw conflict("A voided sales return cannot be printed");
+        if(((Number)x[1]).intValue()!=r.version()) throw conflict("The sales return has changed. Refresh and try again");
         long uid=userId(auth); LocalDateTime now=LocalDateTime.now();
         jdbc.update("UPDATE sales_return SET printed_by=?,printed_at=?,print_count=print_count+1,updated_by=?,updated_at=?,version=version+1 WHERE id=? AND version=?",uid,now,uid,now,id,r.version());
         return ApiResponse.success(map("printedAt",now,"printCount",((Number)x[3]).intValue()+1,"version",r.version()+1));
@@ -127,10 +127,10 @@ public class SalesReturnController {
     @Transactional
     public ApiResponse<Void> voidReturn(@PathVariable long id,@RequestBody VersionReason r,Authentication auth) {
         Integer linked=jdbc.queryForObject("SELECT COUNT(*) FROM return_warehouse_return WHERE sales_return_id=?",Integer.class,id);
-        if(linked!=null&&linked>0) throw conflict("销售退货单已加入退货入仓单，不能作废");
+        if(linked!=null&&linked>0) throw conflict("A sales return assigned to a return-warehouse document cannot be voided");
         long uid=userId(auth); LocalDateTime now=LocalDateTime.now();
         int changed=jdbc.update("UPDATE sales_return SET status='VOIDED',voided_by=?,voided_at=?,void_reason=?,updated_by=?,updated_at=?,version=version+1 WHERE id=? AND status='DRAFT' AND printed_at IS NULL AND version=?",uid,now,r.reason(),uid,now,id,r.version());
-        if(changed!=1) throw conflict("只有未打印、未入仓的草稿销售退货单可以作废");
+        if(changed!=1) throw conflict("Only an unprinted draft sales return that has not been warehoused can be voided");
         return ApiResponse.success(null);
     }
 
@@ -152,14 +152,14 @@ public class SalesReturnController {
     @GetMapping("/return-warehouses/{id}")
     public ApiResponse<Map<String,Object>> getWarehouse(@PathVariable long id) {
         var rows=jdbc.query("SELECT id,warehouse_no,warehouse_date,status,COALESCE(remark,''),version,created_at,updated_at,approved_at FROM return_warehouse WHERE id=?",(rs,n)->map("id",rs.getLong(1),"warehouseNo",rs.getString(2),"warehouseDate",rs.getDate(3).toLocalDate(),"status",rs.getString(4),"remark",rs.getString(5),"version",rs.getInt(6),"createdAt",rs.getTimestamp(7).toLocalDateTime(),"updatedAt",rs.getTimestamp(8).toLocalDateTime(),"approvedAt",rs.getTimestamp(9)==null?null:rs.getTimestamp(9).toLocalDateTime()),id);
-        if(rows.isEmpty()) throw notFound("未找到退货入仓单"); Map<String,Object> result=rows.get(0);
+        if(rows.isEmpty()) throw notFound("Return-warehouse document not found"); Map<String,Object> result=rows.get(0);
         result.put("returns",jdbc.query("SELECT r.id,r.return_no,r.return_date,r.customer_code_snapshot,r.customer_name_snapshot,r.total_amount,r.status FROM return_warehouse_return wr JOIN sales_return r ON r.id=wr.sales_return_id WHERE wr.return_warehouse_id=? ORDER BY wr.line_no",(rs,n)->map("id",rs.getLong(1),"returnNo",rs.getString(2),"returnDate",rs.getDate(3).toLocalDate(),"customerCode",rs.getString(4),"customerName",rs.getString(5),"totalAmount",rs.getBigDecimal(6),"status",rs.getString(7)),id));
         result.put("items",jdbc.query("SELECT r.return_no,r.return_date,COALESCE(r.salesperson_name_snapshot,''),r.customer_code_snapshot,r.customer_name_snapshot,"+
                 "i.line_no,i.sku_code_snapshot,i.product_name_snapshot,COALESCE(i.specification_snapshot,''),COALESCE(i.color_snapshot,''),"+
                 "i.sales_unit_snapshot,-ABS(i.quantity),i.unit_price,i.reference_price,-ABS(i.line_amount),COALESCE(r.remark,''),COALESCE(i.remark,'') " +
                 "FROM return_warehouse_return wr JOIN sales_return r ON r.id=wr.sales_return_id JOIN sales_return_item i ON i.sales_return_id=r.id " +
                 "WHERE wr.return_warehouse_id=? ORDER BY wr.line_no,i.line_no",(rs,n)->map(
-                "businessType","销售退货","returnNo",rs.getString(1),"returnDate",rs.getDate(2).toLocalDate(),
+                "businessType","Sales Return","returnNo",rs.getString(1),"returnDate",rs.getDate(2).toLocalDate(),
                 "salespersonName",rs.getString(3),"customerCode",rs.getString(4),"customerName",rs.getString(5),
                 "lineNo",rs.getInt(6),"skuCode",rs.getString(7),"productName",rs.getString(8),
                 "specification",rs.getString(9),"color",rs.getString(10),"unit",rs.getString(11),
@@ -172,10 +172,10 @@ public class SalesReturnController {
     @PostMapping("/return-warehouses")
     @Transactional
     public ApiResponse<Map<String,Object>> createWarehouse(@Valid @RequestBody WarehouseRequest r,Authentication auth) {
-        List<Long> ids=r.salesReturnIds().stream().distinct().toList(); if(ids.size()!=r.salesReturnIds().size()) throw bad("销售退货单不能重复选择");
+        List<Long> ids=r.salesReturnIds().stream().distinct().toList(); if(ids.size()!=r.salesReturnIds().size()) throw bad("Do not select the same sales return more than once");
         String marks=String.join(",",ids.stream().map(x->"?").toList());
         List<Long> valid=jdbc.query("SELECT r.id FROM sales_return r LEFT JOIN return_warehouse_return wr ON wr.sales_return_id=r.id WHERE r.id IN ("+marks+") AND r.status='DRAFT' AND wr.id IS NULL ORDER BY r.id",(rs,n)->rs.getLong(1),ids.toArray());
-        if(valid.size()!=ids.size()) throw conflict("所选销售退货单已审核、已作废或已加入其它退货入仓单");
+        if(valid.size()!=ids.size()) throw conflict("A selected sales return is approved, voided, or already assigned to another return-warehouse document");
         long uid=userId(auth);LocalDateTime now=LocalDateTime.now();String no=nextNo("RETURN_WAREHOUSE","TJ",r.warehouseDate());
         var key=new org.springframework.jdbc.support.GeneratedKeyHolder();
         jdbc.update(c->{PreparedStatement ps=c.prepareStatement("INSERT INTO return_warehouse(warehouse_no,warehouse_date,status,remark,created_by,created_at,updated_by,updated_at) VALUES(?,?,'DRAFT',?,?,?,?,?)",Statement.RETURN_GENERATED_KEYS);ps.setString(1,no);ps.setObject(2,r.warehouseDate());ps.setString(3,r.remark());ps.setLong(4,uid);ps.setObject(5,now);ps.setLong(6,uid);ps.setObject(7,now);return ps;},key);
@@ -187,27 +187,27 @@ public class SalesReturnController {
     @Transactional
     public ApiResponse<Map<String,Object>> approveWarehouse(@PathVariable long id,@RequestBody VersionRequest r,Authentication auth) {
         var headers=jdbc.query("SELECT warehouse_no,status,version FROM return_warehouse WHERE id=? FOR UPDATE",(rs,n)->new Object[]{rs.getString(1),rs.getString(2),rs.getInt(3)},id);
-        if(headers.isEmpty()) throw notFound("未找到退货入仓单"); Object[] header=headers.get(0);
-        if(!"DRAFT".equals(header[1])) throw conflict("只有草稿退货入仓单可以审核"); if(((Number)header[2]).intValue()!=r.version()) throw conflict("退货入仓单已变化，请刷新");
+        if(headers.isEmpty()) throw notFound("Return-warehouse document not found"); Object[] header=headers.get(0);
+        if(!"DRAFT".equals(header[1])) throw conflict("Only a draft return-warehouse document can be approved"); if(((Number)header[2]).intValue()!=r.version()) throw conflict("The return-warehouse document has changed. Refresh and try again");
         List<Long> returns=jdbc.query("SELECT sr.id FROM return_warehouse_return wr JOIN sales_return sr ON sr.id=wr.sales_return_id WHERE wr.return_warehouse_id=? ORDER BY wr.line_no FOR UPDATE",(rs,n)->rs.getLong(1),id);
-        if(returns.isEmpty()) throw conflict("退货入仓单没有销售退货单");
-        String marks=String.join(",",returns.stream().map(x->"?").toList()); Integer bad=jdbc.queryForObject("SELECT COUNT(*) FROM sales_return WHERE id IN ("+marks+") AND status<>'DRAFT'",Integer.class,returns.toArray()); if(bad!=null&&bad>0)throw conflict("关联销售退货单状态已变化，请刷新");
+        if(returns.isEmpty()) throw conflict("The return-warehouse document contains no sales returns");
+        String marks=String.join(",",returns.stream().map(x->"?").toList()); Integer bad=jdbc.queryForObject("SELECT COUNT(*) FROM sales_return WHERE id IN ("+marks+") AND status<>'DRAFT'",Integer.class,returns.toArray()); if(bad!=null&&bad>0)throw conflict("A linked sales-return status has changed. Refresh and try again");
         List<StockLine> lines=jdbc.query("SELECT i.id,i.sku_id,i.sku_code_snapshot,i.product_name_snapshot,i.quantity FROM return_warehouse_return wr JOIN sales_return_item i ON i.sales_return_id=wr.sales_return_id WHERE wr.return_warehouse_id=? ORDER BY i.sku_id,i.id FOR UPDATE",(rs,n)->new StockLine(rs.getLong(1),rs.getLong(2),rs.getString(3),rs.getString(4),rs.getBigDecimal(5)),id);
         long uid=userId(auth); LocalDateTime now=LocalDateTime.now();
-        for(StockLine line:lines){BigDecimal before=jdbc.queryForObject("SELECT total_stock FROM product_sku WHERE id=? FOR UPDATE",BigDecimal.class,line.skuId());if(before==null)throw conflict("货品不存在："+line.skuCode()+" "+line.productName());BigDecimal after=before.add(line.quantity());jdbc.update("UPDATE product_sku SET total_stock=?,version=version+1,updated_by=?,updated_at=? WHERE id=?",after,uid,now,line.skuId());jdbc.update("INSERT INTO inventory_movement(product_sku_id,movement_type,quantity_change,before_quantity,after_quantity,reason,reference_type,reference_id,reference_line_id,reference_no,created_by,created_at) VALUES(?,'SALES_RETURN',?,?,?,?, 'RETURN_WAREHOUSE',?,?,?,?,?)",line.skuId(),line.quantity(),before,after,"退货入仓单 "+header[0]+" 审核入库",id,line.itemId(),header[0],uid,now);}
+        for(StockLine line:lines){BigDecimal before=jdbc.queryForObject("SELECT total_stock FROM product_sku WHERE id=? FOR UPDATE",BigDecimal.class,line.skuId());if(before==null)throw conflict("Product not found: "+line.skuCode()+" "+line.productName());BigDecimal after=before.add(line.quantity());jdbc.update("UPDATE product_sku SET total_stock=?,version=version+1,updated_by=?,updated_at=? WHERE id=?",after,uid,now,line.skuId());jdbc.update("INSERT INTO inventory_movement(product_sku_id,movement_type,quantity_change,before_quantity,after_quantity,reason,reference_type,reference_id,reference_line_id,reference_no,created_by,created_at) VALUES(?,'SALES_RETURN',?,?,?,?, 'RETURN_WAREHOUSE',?,?,?,?,?)",line.skuId(),line.quantity(),before,after,"Inventory received when return-warehouse document "+header[0]+" was approved",id,line.itemId(),header[0],uid,now);}
         jdbc.update("UPDATE sales_return SET status='APPROVED',approved_by=?,approved_at=?,updated_by=?,updated_at=?,version=version+1 WHERE id IN ("+marks+") AND status='DRAFT'",join(uid,now,uid,now,returns));
-        int changed=jdbc.update("UPDATE return_warehouse SET status='APPROVED',approved_by=?,approved_at=?,updated_by=?,updated_at=?,version=version+1 WHERE id=? AND status='DRAFT' AND version=?",uid,now,uid,now,id,r.version());if(changed!=1)throw conflict("退货入仓单状态已变化，请刷新");
+        int changed=jdbc.update("UPDATE return_warehouse SET status='APPROVED',approved_by=?,approved_at=?,updated_by=?,updated_at=?,version=version+1 WHERE id=? AND status='DRAFT' AND version=?",uid,now,uid,now,id,r.version());if(changed!=1)throw conflict("The return-warehouse status has changed. Refresh and try again");
         return ApiResponse.success(map("id",id,"status","APPROVED","approvedAt",now,"version",r.version()+1));
     }
 
     private Prepared prepare(ReturnRequest r,Long excludedId){
-        var customers=jdbc.query("SELECT customer_code,short_name,settlement_method FROM customer WHERE id=? AND enabled=1",(rs,n)->new String[]{rs.getString(1),rs.getString(2),rs.getString(3)},r.customerId());if(customers.isEmpty())throw bad("客户不存在或已停用");
-        if(r.sourceSalesOrderId()!=null){Integer ok=jdbc.queryForObject("SELECT COUNT(*) FROM sales_order WHERE id=? AND customer_id=? AND status<>'VOIDED'",Integer.class,r.sourceSalesOrderId(),r.customerId());if(ok==null||ok==0)throw bad("原销售单与所选客户不匹配或已作废");}
-        String salesperson="";if(r.salespersonId()!=null){List<String> names=jdbc.query("SELECT employee_name FROM employee WHERE id=? AND enabled=1",(rs,n)->rs.getString(1),r.salespersonId());if(names.isEmpty())throw bad("业务员不存在或已停用");salesperson=names.get(0);}
+        var customers=jdbc.query("SELECT customer_code,short_name,settlement_method FROM customer WHERE id=? AND enabled=1",(rs,n)->new String[]{rs.getString(1),rs.getString(2),rs.getString(3)},r.customerId());if(customers.isEmpty())throw bad("The customer does not exist or is disabled");
+        if(r.sourceSalesOrderId()!=null){Integer ok=jdbc.queryForObject("SELECT COUNT(*) FROM sales_order WHERE id=? AND customer_id=? AND status<>'VOIDED'",Integer.class,r.sourceSalesOrderId(),r.customerId());if(ok==null||ok==0)throw bad("The original sales order does not match the selected customer or has been voided");}
+        String salesperson="";if(r.salespersonId()!=null){List<String> names=jdbc.query("SELECT employee_name FROM employee WHERE id=? AND enabled=1",(rs,n)->rs.getString(1),r.salespersonId());if(names.isEmpty())throw bad("The salesperson does not exist or is disabled");salesperson=names.get(0);}
         List<ReturnLine> lines=new ArrayList<>();BigDecimal total=BigDecimal.ZERO;int no=1;
         for(ReturnItem item:r.items()){
-            var sku=jdbc.query("SELECT sku_code,product_name,specification,color,package_spec,package_unit,sales_unit,wholesale_price FROM product_sku WHERE id=? AND enabled=1 AND saleable=1",(rs,n)->new Object[]{rs.getString(1),rs.getString(2),rs.getString(3),rs.getString(4),rs.getBigDecimal(5),rs.getString(6),rs.getString(7),rs.getBigDecimal(8)},item.skuId());if(sku.isEmpty())throw bad("货品不存在、已停用或不可销售");Object[] s=sku.get(0);
-            if(item.sourceSalesOrderItemId()!=null){if(r.sourceSalesOrderId()==null)throw bad("选择原销售明细时必须指定原销售单");BigDecimal sold=jdbc.queryForObject("SELECT quantity FROM sales_order_item WHERE id=? AND sales_order_id=? AND sku_id=?",BigDecimal.class,item.sourceSalesOrderItemId(),r.sourceSalesOrderId(),item.skuId());if(sold==null)throw bad("原销售明细与所选货品不匹配");String exclude=excludedId==null?"":" AND sr.id<>?";List<Object> args=new ArrayList<>(List.of(item.sourceSalesOrderItemId()));if(excludedId!=null)args.add(excludedId);BigDecimal returned=jdbc.queryForObject("SELECT COALESCE(SUM(i.quantity),0) FROM sales_return_item i JOIN sales_return sr ON sr.id=i.sales_return_id WHERE i.source_sales_order_item_id=? AND sr.status<>'VOIDED'"+exclude,BigDecimal.class,args.toArray());if(returned.add(item.quantity()).compareTo(sold)>0)throw bad("退货数量不能超过原销售数量");}
+            var sku=jdbc.query("SELECT sku_code,product_name,specification,color,package_spec,package_unit,sales_unit,wholesale_price FROM product_sku WHERE id=? AND enabled=1 AND saleable=1",(rs,n)->new Object[]{rs.getString(1),rs.getString(2),rs.getString(3),rs.getString(4),rs.getBigDecimal(5),rs.getString(6),rs.getString(7),rs.getBigDecimal(8)},item.skuId());if(sku.isEmpty())throw bad("The product does not exist, is disabled, or is not saleable");Object[] s=sku.get(0);
+            if(item.sourceSalesOrderItemId()!=null){if(r.sourceSalesOrderId()==null)throw bad("Specify the original sales order when selecting an original sales line");BigDecimal sold=jdbc.queryForObject("SELECT quantity FROM sales_order_item WHERE id=? AND sales_order_id=? AND sku_id=?",BigDecimal.class,item.sourceSalesOrderItemId(),r.sourceSalesOrderId(),item.skuId());if(sold==null)throw bad("The original sales line does not match the selected product");String exclude=excludedId==null?"":" AND sr.id<>?";List<Object> args=new ArrayList<>(List.of(item.sourceSalesOrderItemId()));if(excludedId!=null)args.add(excludedId);BigDecimal returned=jdbc.queryForObject("SELECT COALESCE(SUM(i.quantity),0) FROM sales_return_item i JOIN sales_return sr ON sr.id=i.sales_return_id WHERE i.source_sales_order_item_id=? AND sr.status<>'VOIDED'"+exclude,BigDecimal.class,args.toArray());if(returned.add(item.quantity()).compareTo(sold)>0)throw bad("The return quantity cannot exceed the original sold quantity");}
             BigDecimal price=item.unitPrice()==null?(BigDecimal)s[7]:item.unitPrice();BigDecimal amount=item.quantity().multiply(price).setScale(2,RoundingMode.HALF_UP);total=total.add(amount);
             lines.add(new ReturnLine(no++,item.sourceSalesOrderItemId(),item.skuId(),(String)s[0],(String)s[1],(String)s[2],(String)s[3],item.packageSpec()==null?(BigDecimal)s[4]:item.packageSpec(),item.packageCount(),item.packageUnit()==null?(String)s[5]:item.packageUnit(),item.quantity(),(String)s[6],price,(BigDecimal)s[7],amount,item.remark()));
         }
