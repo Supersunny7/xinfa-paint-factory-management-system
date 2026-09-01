@@ -2,9 +2,9 @@
 
 ## Current decision
 
-**PRIVATE RELEASE CANDIDATE — source cleanup is complete, but do not switch the repository to public yet.**
+**PUBLIC-READY RELEASE CANDIDATE — technical preparation is complete; changing repository visibility still requires the owner's explicit final action.**
 
-The English source-only copy has completed localization and automated verification. Public visibility remains blocked only by the license decision and final browser/screenshot acceptance.
+The English source-only copy has completed localization, automated verification, browser acceptance, MIT licensing, and a history-aware sensitive-content review.
 
 ## Included in the local English copy
 
@@ -45,9 +45,9 @@ The English source-only copy has completed localization and automated verificati
 - [x] Add fictional demo data that is safe to publish.
 - [x] Add English setup, architecture, business-flow, and testing documentation.
 - [x] Add backend and frontend GitHub Actions workflows.
-- [ ] Decide on a license before publication.
+- [x] Add the MIT License before publication.
 - [x] Complete browser acceptance for every core business workflow. Login, dashboard, and all 24 routed application pages opened successfully against an isolated English demo database with no visible Chinese text and no browser console warnings or errors. Sales order creation and positioning, phone/code lookup, product entry, Print Preview, first-print stock deduction, purchasing and approved receipt stock-in, sales return and approved return warehousing, other-expense approval and cashflow, dispatch approval, inventory reconciliation, and ledger source-document double-click navigation all passed with linked fictional demo documents. See `docs/BROWSER_ACCEPTANCE_REPORT.md` for evidence. Public-safe desktop screenshots are included. Backend tests, frontend build, and a fresh 23-migration database have passed.
-- [x] Run a final tracked-source language scan, secret review, and Git diff check.
+- [x] Run a final tracked-source language scan, full-history secret review, suspicious-filename review, and Git diff check. See `docs/PUBLIC_RELEASE_SECURITY_REVIEW.md`.
 
 ## Files requiring special review
 
@@ -64,4 +64,4 @@ The English source-only copy has completed localization and automated verificati
 
 ## Publication recommendation
 
-Keep the GitHub repository private until a license is selected. Browser acceptance and public-safe screenshots are complete. After the license decision, run one last history-aware secret scan before changing visibility.
+The repository is technically ready for public visibility. Keep it private until the owner explicitly approves the GitHub visibility change, then verify the public repository page and clone path after the change.
