@@ -62,7 +62,7 @@ public class DispatchSheetController {
     public ApiResponse<Map<String,Object>> detail(@PathVariable long id) {
         var headers=jdbc.query("SELECT d.id,d.dispatch_no,d.dispatch_date,d.route_id,COALESCE(d.route_name_snapshot,''),d.vehicle_id,COALESCE(d.vehicle_code_snapshot,''),d.driver_id,COALESCE(d.driver_name_snapshot,''),d.delivery_person_id,COALESCE(d.delivery_person_name_snapshot,''),d.status,COALESCE(d.remark,''),d.version,d.created_at,d.updated_at,d.approved_at,d.printed_at,d.print_count,cu.display_name,uu.display_name,au.display_name,pu.display_name FROM dispatch_sheet d JOIN sys_user cu ON cu.id=d.created_by JOIN sys_user uu ON uu.id=d.updated_by LEFT JOIN sys_user au ON au.id=d.approved_by LEFT JOIN sys_user pu ON pu.id=d.printed_by WHERE d.id=?",
             (rs,n)->map("id",rs.getLong(1),"dispatchNo",rs.getString(2),"dispatchDate",rs.getDate(3)==null?null:rs.getDate(3).toLocalDate(),"routeId",nullableLong(rs,4),"routeName",rs.getString(5),"vehicleId",nullableLong(rs,6),"vehicleCode",rs.getString(7),"driverId",nullableLong(rs,8),"driverName",rs.getString(9),"deliveryPersonId",nullableLong(rs,10),"deliveryPersonName",rs.getString(11),"status",rs.getString(12),"remark",rs.getString(13),"version",rs.getInt(14),"createdAt",rs.getTimestamp(15).toLocalDateTime(),"updatedAt",rs.getTimestamp(16).toLocalDateTime(),"approvedAt",rs.getTimestamp(17)==null?null:rs.getTimestamp(17).toLocalDateTime(),"printedAt",rs.getTimestamp(18)==null?null:rs.getTimestamp(18).toLocalDateTime(),"printCount",rs.getInt(19),"createdByName",rs.getString(20),"updatedByName",rs.getString(21),"approvedByName",rs.getString(22),"printedByName",rs.getString(23)),id);
-        if(headers.isEmpty()) throw notFound("未找到出车表");
+        if(headers.isEmpty()) throw notFound("Dispatch sheet not found");
         var orders=jdbc.query("SELECT o.id,o.sequence_no,s.id,s.order_no,s.order_date,o.customer_code_snapshot,o.customer_name_snapshot,COALESCE(s.salesperson_name_snapshot,''),o.settlement_method_snapshot,o.amount_snapshot FROM dispatch_sales_order o JOIN sales_order s ON s.id=o.sales_order_id WHERE o.dispatch_sheet_id=? AND o.is_active=1 ORDER BY o.sequence_no",
             (rs,n)->map("linkId",rs.getLong(1),"sequenceNo",rs.getInt(2),"salesOrderId",rs.getLong(3),"orderNo",rs.getString(4),"orderDate",rs.getDate(5).toLocalDate(),"customerCode",rs.getString(6),"customerName",rs.getString(7),"salespersonName",rs.getString(8),"settlementMethod",rs.getString(9),"amount",rs.getBigDecimal(10)),id);
         Map<String,Object> result=new LinkedHashMap<>(headers.get(0)); result.put("orders",orders);
@@ -93,7 +93,7 @@ public class DispatchSheetController {
         String delivery=snapshot("employee",request.deliveryPersonId(),"employee_name");
         int changed=jdbc.update("UPDATE dispatch_sheet SET dispatch_date=?,route_id=?,route_name_snapshot=?,vehicle_id=?,vehicle_code_snapshot=?,driver_id=?,driver_name_snapshot=?,delivery_person_id=?,delivery_person_name_snapshot=?,remark=?,version=version+1,updated_by=?,updated_at=? WHERE id=? AND status='DRAFT' AND version=?",
             request.dispatchDate(),request.routeId(),route,request.vehicleId(),vehicle,request.driverId(),driver,request.deliveryPersonId(),delivery,request.remark(),userId(auth),LocalDateTime.now(),id,request.version());
-        if(changed!=1) throw conflict("出车表已审核或已被其他人修改，请刷新后重试");
+        if(changed!=1) throw conflict("The dispatch sheet is approved or was changed by another user. Refresh and try again");
         return ApiResponse.success(null);
     }
 
@@ -153,7 +153,7 @@ public class DispatchSheetController {
     public ApiResponse<Map<String,Object>> addOrders(@PathVariable long id,@Valid @RequestBody BatchOrderNoRequest request,Authentication auth) {
         requireDraft(id);
         List<String> orderNos=request.orderNos().stream().map(value->value.trim().toUpperCase()).distinct().toList();
-        if(orderNos.size()!=request.orderNos().size()) throw bad("请勿重复选择同一张销售单");
+        if(orderNos.size()!=request.orderNos().size()) throw bad("Do not select the same sales order more than once");
         List<Map<String,Object>> orders=orderNos.stream().map(orderNo->resolveOrder(id,orderNo)).toList();
         Integer sequence=jdbc.queryForObject("SELECT COALESCE(MAX(sequence_no),0)+1 FROM dispatch_sales_order WHERE dispatch_sheet_id=? AND is_active=1",Integer.class,id);
         long uid=userId(auth); LocalDateTime now=LocalDateTime.now();
@@ -168,7 +168,7 @@ public class DispatchSheetController {
     public ApiResponse<Void> removeOrder(@PathVariable long id,@PathVariable long linkId,Authentication auth) {
         requireDraft(id);
         int changed=jdbc.update("UPDATE dispatch_sales_order SET is_active=0 WHERE id=? AND dispatch_sheet_id=? AND is_active=1",linkId,id);
-        if(changed!=1) throw notFound("未找到要移除的销售单关联");
+        if(changed!=1) throw notFound("The sales-order link to remove was not found");
         touch(id,userId(auth)); return ApiResponse.success(null);
     }
 
@@ -176,26 +176,26 @@ public class DispatchSheetController {
     @Transactional
     public ApiResponse<Void> approve(@PathVariable long id,@Valid @RequestBody VersionRequest request,Authentication auth) {
         var headers=jdbc.query("SELECT dispatch_date,route_id,vehicle_id,driver_id FROM dispatch_sheet WHERE id=? AND status='DRAFT'",(rs,n)->map("dispatchDate",rs.getDate(1)==null?null:rs.getDate(1).toLocalDate(),"routeId",nullableLong(rs,2),"vehicleId",nullableLong(rs,3),"driverId",nullableLong(rs,4)),id);
-        if(headers.isEmpty()) throw conflict("出车表已审核或作废，不能重复审核");
+        if(headers.isEmpty()) throw conflict("An approved or voided dispatch sheet cannot be approved again");
         Map<String,Object> header=headers.get(0);
-        if(header.get("dispatchDate")==null) throw bad("审核前必须填写日期");
+        if(header.get("dispatchDate")==null) throw bad("Enter a date before approval");
         Integer orderCount=jdbc.queryForObject("SELECT COUNT(*) FROM dispatch_sales_order WHERE dispatch_sheet_id=? AND is_active=1",Integer.class,id);
         validateHasOrders(orderCount!=null?orderCount:0);
         long uid=userId(auth); LocalDateTime now=LocalDateTime.now();
         int changed=jdbc.update("UPDATE dispatch_sheet SET status='APPROVED',approved_by=?,approved_at=?,updated_by=?,updated_at=?,version=version+1 WHERE id=? AND status='DRAFT' AND version=?",uid,now,uid,now,id,request.version());
-        if(changed!=1) throw conflict("出车表已审核或已被修改，请刷新后重试");
+        if(changed!=1) throw conflict("The dispatch sheet is approved or has changed. Refresh and try again");
         return ApiResponse.success(null);
     }
 
     static void validateHasOrders(int orderCount) {
-        if(orderCount<=0) throw bad("出车表没有销售单，不能审核");
+        if(orderCount<=0) throw bad("A dispatch sheet without sales orders cannot be approved");
     }
 
     @PostMapping("/{id}/confirm-print")
     @Transactional
     public ApiResponse<Map<String,Object>> confirmPrint(@PathVariable long id,@Valid @RequestBody VersionRequest request,Authentication auth) {
         var rows=jdbc.query("SELECT status,version,printed_at,print_count FROM dispatch_sheet WHERE id=? FOR UPDATE",(rs,n)->map("status",rs.getString(1),"version",rs.getInt(2),"printedAt",rs.getTimestamp(3),"printCount",rs.getInt(4)),id);
-        if(rows.isEmpty())throw notFound("未找到出车表");Map<String,Object> sheet=rows.get(0);if(!"APPROVED".equals(sheet.get("status")))throw conflict("只有主管审核后的出车表可以确认打印");if(((Number)sheet.get("version")).intValue()!=request.version())throw conflict("出车表状态已变化，请刷新后重试");long uid=userId(auth);LocalDateTime now=LocalDateTime.now();boolean first=sheet.get("printedAt")==null;int changed=first?jdbc.update("UPDATE dispatch_sheet SET printed_by=?,printed_at=?,print_count=1,updated_by=?,updated_at=?,version=version+1 WHERE id=? AND status='APPROVED' AND printed_at IS NULL AND version=?",uid,now,uid,now,id,request.version()):jdbc.update("UPDATE dispatch_sheet SET printed_by=?,printed_at=?,print_count=print_count+1,updated_by=?,updated_at=?,version=version+1 WHERE id=? AND status='APPROVED' AND version=?",uid,now,uid,now,id,request.version());if(changed!=1)throw conflict("出车表状态已变化，请刷新后重试");return ApiResponse.success(map("firstPrint",first,"printedAt",now,"printCount",((Number)sheet.get("printCount")).intValue()+1));
+        if(rows.isEmpty())throw notFound("Dispatch sheet not found");Map<String,Object> sheet=rows.get(0);if(!"APPROVED".equals(sheet.get("status")))throw conflict("Only a supervisor-approved dispatch sheet can be confirmed for printing");if(((Number)sheet.get("version")).intValue()!=request.version())throw conflict("The dispatch-sheet status has changed. Refresh and try again");long uid=userId(auth);LocalDateTime now=LocalDateTime.now();boolean first=sheet.get("printedAt")==null;int changed=first?jdbc.update("UPDATE dispatch_sheet SET printed_by=?,printed_at=?,print_count=1,updated_by=?,updated_at=?,version=version+1 WHERE id=? AND status='APPROVED' AND printed_at IS NULL AND version=?",uid,now,uid,now,id,request.version()):jdbc.update("UPDATE dispatch_sheet SET printed_by=?,printed_at=?,print_count=print_count+1,updated_by=?,updated_at=?,version=version+1 WHERE id=? AND status='APPROVED' AND version=?",uid,now,uid,now,id,request.version());if(changed!=1)throw conflict("The dispatch-sheet status has changed. Refresh and try again");return ApiResponse.success(map("firstPrint",first,"printedAt",now,"printCount",((Number)sheet.get("printCount")).intValue()+1));
     }
 
     @GetMapping("/{id}/complete-preview")
@@ -218,30 +218,30 @@ public class DispatchSheetController {
     @PostMapping("/{id}/void")
     @Transactional
     public ApiResponse<Void> voidSheet(@PathVariable long id,@Valid @RequestBody VoidRequest request,Authentication auth) {
-        String status=jdbc.query("SELECT status FROM dispatch_sheet WHERE id=? FOR UPDATE",rs->{if(!rs.next())throw notFound("未找到出车表");return rs.getString(1);},id);
-        if(!"DRAFT".equals(status)) throw conflict("出车表已审核、已完成或已作废，不能更改");
+        String status=jdbc.query("SELECT status FROM dispatch_sheet WHERE id=? FOR UPDATE",rs->{if(!rs.next())throw notFound("Dispatch sheet not found");return rs.getString(1);},id);
+        if(!"DRAFT".equals(status)) throw conflict("An approved, completed, or voided dispatch sheet cannot be changed");
         long uid=userId(auth); LocalDateTime now=LocalDateTime.now();
         int changed=jdbc.update("UPDATE dispatch_sheet SET status='VOIDED',voided_by=?,voided_at=?,void_reason=?,updated_by=?,updated_at=?,version=version+1 WHERE id=? AND status='DRAFT' AND version=?",uid,now,request.reason().trim(),uid,now,id,request.version());
-        if(changed!=1) throw conflict("出车表状态已变化，请刷新后重试");
+        if(changed!=1) throw conflict("The dispatch-sheet status has changed. Refresh and try again");
         return ApiResponse.success(null);
     }
 
     private Map<String,Object> resolveOrder(long sheetId,String orderNo) {
-        if(!orderNo.matches("XS\\d{6}-\\d{3,}")) throw bad("销售单号格式不正确，应类似 XS260810-001");
+        if(!orderNo.matches("XS\\d{6}-\\d{3,}")) throw bad("Invalid sales-order number format; expected a value such as XS260810-001");
         var rows=jdbc.query("SELECT id,order_no,order_date,customer_code_snapshot,customer_name_snapshot,COALESCE(salesperson_name_snapshot,''),settlement_method,total_amount,status,printed_at FROM sales_order WHERE order_no=? FOR UPDATE",
             (rs,n)->map("salesOrderId",rs.getLong(1),"orderNo",rs.getString(2),"orderDate",rs.getDate(3).toLocalDate(),"customerCode",rs.getString(4),"customerName",rs.getString(5),"salespersonName",rs.getString(6),"settlementMethod",rs.getString(7),"totalAmount",rs.getBigDecimal(8),"status",rs.getString(9),"printedAt",rs.getTimestamp(10)),orderNo);
-        if(rows.isEmpty()) throw notFound("未找到销售单“"+orderNo+"”，请检查单号后重新输入");
+        if(rows.isEmpty()) throw notFound("Sales order “"+orderNo+"” was not found. Check the number and try again");
         Map<String,Object> order=rows.get(0); String status=Objects.toString(order.get("status"));
         validateOrderEligibility(status,(java.sql.Timestamp)order.get("printedAt"),orderNo);
-        if("VOIDED".equals(status)) throw bad("销售单“"+orderNo+"”已作废，不能加入出车表");
-        if(order.get("printedAt")==null) throw bad("销售单“"+orderNo+"”尚未打印送货单，不能加入出车表");
+        if("VOIDED".equals(status)) throw bad("Voided sales order “"+orderNo+"” cannot be added to a dispatch sheet");
+        if(order.get("printedAt")==null) throw bad("Sales order “"+orderNo+"” cannot be added until its delivery note has been printed");
         var occupied=jdbc.query("SELECT d.id,d.dispatch_no,d.status FROM dispatch_sales_order o JOIN dispatch_sheet d ON d.id=o.dispatch_sheet_id WHERE o.sales_order_id=? AND o.is_active=1",
             (rs,n)->map("sheetId",rs.getLong(1),"dispatchNo",rs.getString(2),"status",rs.getString(3)),order.get("salesOrderId")).stream()
             .filter(item->dispatchOccupiesSalesOrder(Objects.toString(item.get("status")))).toList();
         if(!occupied.isEmpty()) {
             var existing=occupied.get(0);
-            if(((Number)existing.get("sheetId")).longValue()==sheetId) throw conflict("销售单“"+orderNo+"”已在当前出车表中");
-            throw conflict("销售单“"+orderNo+"”已加入出车表“"+existing.get("dispatchNo")+"”（"+dispatchStatusText(Objects.toString(existing.get("status")))+"），不能重复加入");
+            if(((Number)existing.get("sheetId")).longValue()==sheetId) throw conflict("Sales order “"+orderNo+"” is already on this dispatch sheet");
+            throw conflict("Sales order “"+orderNo+"” is already on dispatch sheet “"+existing.get("dispatchNo")+"” ("+dispatchStatusText(Objects.toString(existing.get("status")))+") and cannot be added again");
         }
         order.put("eligible",true); return order;
     }
@@ -255,20 +255,20 @@ public class DispatchSheetController {
             jdbc.update("INSERT INTO dispatch_sales_order(dispatch_sheet_id,sales_order_id,sequence_no,entered_order_no,customer_code_snapshot,customer_name_snapshot,settlement_method_snapshot,amount_snapshot,is_active,created_by,created_at) VALUES(?,?,?,?,?,?,?,?,1,?,?)",
                 sheetId,order.get("salesOrderId"),sequence,orderNo,order.get("customerCode"),order.get("customerName"),order.get("settlementMethod"),order.get("totalAmount"),uid,now);
         } catch(DataIntegrityViolationException ex) {
-            throw conflict("销售单“"+orderNo+"”刚刚已被其他出车表占用，请刷新后重试");
+            throw conflict("Sales order “"+orderNo+"” was just assigned to another dispatch sheet. Refresh and try again");
         }
     }
 
     private void requireDraft(long id) {
         List<String> rows=jdbc.query("SELECT status FROM dispatch_sheet WHERE id=?",(rs,n)->rs.getString(1),id);
-        if(rows.isEmpty()) throw notFound("未找到出车表");
-        if(!"DRAFT".equals(rows.get(0))) throw conflict("出车表已审核或作废，不能修改");
+        if(rows.isEmpty()) throw notFound("Dispatch sheet not found");
+        if(!"DRAFT".equals(rows.get(0))) throw conflict("An approved or voided dispatch sheet cannot be edited");
     }
 
     private String snapshot(String table,Long id,String nameColumn) {
         if(id==null) return null;
         List<String> rows=jdbc.query("SELECT "+nameColumn+" FROM "+table+" WHERE id=? AND enabled=1",(rs,n)->rs.getString(1),id);
-        if(rows.isEmpty()) throw bad("所选调度资料不存在或已停用"); return rows.get(0);
+        if(rows.isEmpty()) throw bad("The selected dispatch reference record does not exist or is disabled"); return rows.get(0);
     }
 
     private String nextNo(LocalDate date) {
@@ -286,19 +286,19 @@ public class DispatchSheetController {
     private static ResponseStatusException bad(String message){return new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,message);}
     private static ResponseStatusException notFound(String message){return new ResponseStatusException(HttpStatus.NOT_FOUND,message);}
     private static ResponseStatusException conflict(String message){return new ResponseStatusException(HttpStatus.CONFLICT,message);}
-    static String dispatchStatusText(String status){return switch(status){case "DRAFT"->"草稿";case "APPROVED"->"已审核";case "VOIDED"->"已作废";case "COMPLETED"->"历史已完成";case "REVERSED"->"历史已撤销";default->"状态未知";};}
+    static String dispatchStatusText(String status){return switch(status){case "DRAFT"->"Draft";case "APPROVED"->"Approved";case "VOIDED"->"Voided";case "COMPLETED"->"Historical Completed";case "REVERSED"->"Historical Reversed";default->"Unknown Status";};}
     static boolean dispatchOccupiesSalesOrder(String status){return !"VOIDED".equals(status);}
 
-    static ResponseStatusException dispatchStockMutationDisabled(){throw conflict("库存只在销售单首次确认打印时扣减；出车表审核、完成和打印均不改变库存");}
+    static ResponseStatusException dispatchStockMutationDisabled(){throw conflict("Inventory is deducted only when a sales-order delivery note is confirmed for the first time; approving, completing, or printing a dispatch sheet does not change inventory");}
 
     static void validateOrderEligibility(String status,java.sql.Timestamp printedAt,String orderNo){
-        if("VOIDED".equals(status))throw bad("销售单“"+orderNo+"”已作废，不能加入出车表");
-        if(printedAt==null)throw bad("销售单“"+orderNo+"”尚未打印送货单，不能加入出车表");
+        if("VOIDED".equals(status))throw bad("Voided sales order “"+orderNo+"” cannot be added to a dispatch sheet");
+        if(printedAt==null)throw bad("Sales order “"+orderNo+"” cannot be added until its delivery note has been printed");
     }
 
     static String normalizeOrderTail(String tail){
         String value=tail==null?"":tail.trim();
-        if(!value.matches("\\d+"))throw bad("请输入销售单末尾的数字，例如 3、03 或 003");
+        if(!value.matches("\\d+"))throw bad("Enter the digits at the end of the sales-order number, such as 3, 03, or 003");
         String normalized=value.replaceFirst("^0+(?!$)","");
         return normalized;
     }

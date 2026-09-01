@@ -12,18 +12,18 @@ class DispatchSheetControllerTest {
     @Test void dispatchWorkflowNeverMutatesStock(){
         assertThatThrownBy(DispatchSheetController::dispatchStockMutationDisabled)
             .isInstanceOf(ResponseStatusException.class)
-            .hasMessageContaining("只在销售单首次确认打印时扣减")
-            .hasMessageContaining("出车表审核、完成和打印均不改变库存");
+            .hasMessageContaining("deducted only when a sales-order delivery note is confirmed for the first time")
+            .hasMessageContaining("does not change inventory");
     }
     @Test void translatesDispatchStatusesForBusinessMessages(){
-        assertThat(DispatchSheetController.dispatchStatusText("DRAFT")).isEqualTo("草稿");
-        assertThat(DispatchSheetController.dispatchStatusText("APPROVED")).isEqualTo("已审核");
-        assertThat(DispatchSheetController.dispatchStatusText("VOIDED")).isEqualTo("已作废");
+        assertThat(DispatchSheetController.dispatchStatusText("DRAFT")).isEqualTo("Draft");
+        assertThat(DispatchSheetController.dispatchStatusText("APPROVED")).isEqualTo("Approved");
+        assertThat(DispatchSheetController.dispatchStatusText("VOIDED")).isEqualTo("Voided");
     }
     @Test void emptyDispatchSheetCannotBeApproved(){
         assertThatThrownBy(()->DispatchSheetController.validateHasOrders(0))
             .isInstanceOf(ResponseStatusException.class)
-            .hasMessageContaining("没有销售单");
+            .hasMessageContaining("without sales orders");
         DispatchSheetController.validateHasOrders(1);
     }
     @Test void voidedDispatchKeepsHistoryWithoutOccupyingSalesOrder(){
@@ -33,9 +33,9 @@ class DispatchSheetControllerTest {
     }
     @Test void onlyPrintedActiveSalesOrdersCanJoinDispatchSheets(){
         assertThatThrownBy(()->DispatchSheetController.validateOrderEligibility("DRAFT",null,"XS260813-001"))
-            .isInstanceOf(ResponseStatusException.class).hasMessageContaining("尚未打印送货单");
+            .isInstanceOf(ResponseStatusException.class).hasMessageContaining("delivery note has been printed");
         assertThatThrownBy(()->DispatchSheetController.validateOrderEligibility("VOIDED",Timestamp.valueOf(LocalDateTime.now()),"XS260813-002"))
-            .isInstanceOf(ResponseStatusException.class).hasMessageContaining("已作废");
+            .isInstanceOf(ResponseStatusException.class).hasMessageContaining("Voided");
         DispatchSheetController.validateOrderEligibility("DRAFT",Timestamp.valueOf(LocalDateTime.now()),"XS260813-003");
     }
     @Test void normalizesSalesOrderTailAndKeepsZeroEquivalent(){
@@ -46,6 +46,6 @@ class DispatchSheetControllerTest {
     }
     @Test void rejectsNonNumericSalesOrderTail(){
         assertThatThrownBy(()->DispatchSheetController.normalizeOrderTail("XS003"))
-            .isInstanceOf(ResponseStatusException.class).hasMessageContaining("末尾的数字");
+            .isInstanceOf(ResponseStatusException.class).hasMessageContaining("digits at the end");
     }
 }
