@@ -35,4 +35,4 @@ Broad password and secret patterns produced only expected safe matches:
 
 **PASS — no sensitive content was found in the current tree or reachable Git history.**
 
-The repository is technically ready for public visibility. Changing GitHub visibility remains a separate owner-authorized action.
+The owner subsequently authorized public visibility. Anonymous access to the repository page, README, and license was verified after publication.

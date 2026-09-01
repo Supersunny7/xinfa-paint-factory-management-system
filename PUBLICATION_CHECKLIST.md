@@ -2,9 +2,9 @@
 
 ## Current decision
 
-**PUBLIC-READY RELEASE CANDIDATE — technical preparation is complete; changing repository visibility still requires the owner's explicit final action.**
+**PUBLIC RELEASE — the owner approved the visibility change on 2026-09-02, and anonymous access was verified.**
 
-The English source-only copy has completed localization, automated verification, browser acceptance, MIT licensing, and a history-aware sensitive-content review.
+The English source-only copy has completed localization, automated verification, browser acceptance, MIT licensing, a history-aware sensitive-content review, and public GitHub publication.
 
 ## Included in the local English copy
 
@@ -64,4 +64,4 @@ The English source-only copy has completed localization, automated verification,
 
 ## Publication recommendation
 
-The repository is technically ready for public visibility. Keep it private until the owner explicitly approves the GitHub visibility change, then verify the public repository page and clone path after the change.
+The repository is public. Anonymous HTTP access to the repository page, raw README, and raw MIT license returned successfully after the visibility change.

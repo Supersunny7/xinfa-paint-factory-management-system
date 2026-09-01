@@ -2,7 +2,7 @@
 
 A full-stack business management application for paint and coatings distribution. This English portfolio edition demonstrates document-based sales, purchasing, dispatch, returns, inventory, expense, and ledger workflows.
 
-> **Publication status:** Public-ready English release candidate. Tracked source, tests, migrations, documentation, fictional demo records, public-safe screenshots, core browser workflows, MIT licensing, and a full-history sensitive-content review are complete. Changing GitHub visibility remains an owner-authorized action. See [PUBLICATION_CHECKLIST.md](PUBLICATION_CHECKLIST.md), [docs/BROWSER_ACCEPTANCE_REPORT.md](docs/BROWSER_ACCEPTANCE_REPORT.md), and [docs/PUBLIC_RELEASE_SECURITY_REVIEW.md](docs/PUBLIC_RELEASE_SECURITY_REVIEW.md).
+> **Publication status:** Public English release. Tracked source, tests, migrations, documentation, fictional demo records, public-safe screenshots, core browser workflows, MIT licensing, and a full-history sensitive-content review are complete. Anonymous access to the repository, README, and license was verified after publication. See [PUBLICATION_CHECKLIST.md](PUBLICATION_CHECKLIST.md), [docs/BROWSER_ACCEPTANCE_REPORT.md](docs/BROWSER_ACCEPTANCE_REPORT.md), and [docs/PUBLIC_RELEASE_SECURITY_REVIEW.md](docs/PUBLIC_RELEASE_SECURITY_REVIEW.md).
 
 ## Features
 
