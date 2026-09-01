@@ -27,19 +27,19 @@ public class ProductImportController {
 
     @PostMapping(value="/import",consumes=MediaType.MULTIPART_FORM_DATA_VALUE)
     public ApiResponse<Map<String,Object>> importCsv(@RequestPart("file") MultipartFile file,Authentication auth)throws Exception{
-        if(file.isEmpty())throw bad("请选择 CSV 文件");
+        if(file.isEmpty())throw bad("Select a CSV file");
         String text=new String(file.getBytes(),StandardCharsets.UTF_8).replace("\uFEFF","");
         List<List<String>> records=parseCsv(text);
-        if(records.size()<2)throw bad("CSV 至少需要表头和一行数据");
-        if(records.size()>5001)throw bad("单次最多导入 5000 行");
+        if(records.size()<2)throw bad("The CSV must contain a header and at least one data row");
+        if(records.size()>5001)throw bad("A single import supports at most 5,000 rows");
         Map<String,Integer> columns=columns(records.get(0));
-        for(String required:List.of("skuCode","productName","salesUnit"))if(!columns.containsKey(required))throw bad("CSV 缺少必填列："+required);
+        for(String required:List.of("skuCode","productName","salesUnit"))if(!columns.containsKey(required))throw bad("CSV is missing required column: "+required);
         long uid=userId(auth);int inserted=0,updated=0,failed=0;List<Map<String,Object>> errors=new ArrayList<>();
         for(int i=1;i<records.size();i++){
             List<String> row=records.get(i);if(row.stream().allMatch(String::isBlank))continue;
             try{
                 String code=value(row,columns,"skuCode"),name=value(row,columns,"productName"),unit=value(row,columns,"salesUnit");
-                if(code.isBlank()||name.isBlank()||unit.isBlank())throw new IllegalArgumentException("编号、品名和单位不能为空");
+                if(code.isBlank()||name.isBlank()||unit.isBlank())throw new IllegalArgumentException("Code, product name, and unit cannot be blank");
                 Object[] values={name,blank(value(row,columns,"specification")),blank(value(row,columns,"color")),unit,decimal(row,columns,"packageSpec"),blank(value(row,columns,"packageUnit")),decimal(row,columns,"wholesalePrice"),decimal(row,columns,"retailPrice"),zero(decimal(row,columns,"totalStock")),zero(decimal(row,columns,"stockLowerLimit")),decimal(row,columns,"lastPurchasePrice")};
                 List<Long> ids=jdbc.query("SELECT id FROM product_sku WHERE sku_code=?",(rs,n)->rs.getLong(1),code);
                 LocalDateTime now=LocalDateTime.now();
@@ -48,7 +48,7 @@ public class ProductImportController {
                 }else{
                     jdbc.update("UPDATE product_sku SET product_name=?,specification=?,color=?,sales_unit=?,package_spec=?,package_unit=?,wholesale_price=?,retail_price=?,stock_lower_limit=?,last_purchase_price=?,enabled=1,version=version+1,updated_by=?,updated_at=? WHERE id=?",values[0],values[1],values[2],values[3],values[4],values[5],values[6],values[7],values[9],values[10],uid,now,ids.get(0));updated++;
                 }
-            }catch(Exception ex){failed++;if(errors.size()<50)errors.add(Map.of("row",i+1,"message",ex.getMessage()==null?"数据格式错误":ex.getMessage()));}
+            }catch(Exception ex){failed++;if(errors.size()<50)errors.add(Map.of("row",i+1,"message",ex.getMessage()==null?"Invalid data format":ex.getMessage()));}
         }
         return ApiResponse.success(Map.of("inserted",inserted,"updated",updated,"failed",failed,"errors",errors));
     }

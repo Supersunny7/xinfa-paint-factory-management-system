@@ -29,7 +29,7 @@ public class MasterDataWriteController {
         long userId=userId(auth); LocalDateTime now=LocalDateTime.now(); GeneratedKeyHolder keys=new GeneratedKeyHolder();
         try {
             jdbc.update(c->{PreparedStatement ps=c.prepareStatement("INSERT INTO customer(customer_code,short_name,contact_name,mobile,phone,route_text,settlement_method,enabled,version,created_by,created_at,updated_by,updated_at) VALUES(?,?,?,?,?,?,?,1,0,?,?,?,?)", Statement.RETURN_GENERATED_KEYS); int i=1; ps.setString(i++,r.customerCode());ps.setString(i++,r.shortName());ps.setString(i++,blankToNull(r.contactName()));ps.setString(i++,blankToNull(r.mobile()));ps.setString(i++,blankToNull(r.phone()));ps.setString(i++,blankToNull(r.route()));ps.setString(i++,blankToNull(r.settlementMethod()));ps.setLong(i++,userId);ps.setObject(i++,now);ps.setLong(i++,userId);ps.setObject(i,now);return ps;},keys);
-        } catch(DataIntegrityViolationException e){throw conflict("客户编号已存在");}
+        } catch(DataIntegrityViolationException e){throw conflict("Customer code already exists");}
         return ApiResponse.success(Map.of("id",keys.getKey().longValue()));
     }
 
@@ -37,7 +37,7 @@ public class MasterDataWriteController {
     public ApiResponse<Void> updateCustomer(@PathVariable long id,@Valid @RequestBody CustomerRequest r,Authentication auth){
         int changed;
         try { changed=jdbc.update("UPDATE customer SET customer_code=?,short_name=?,contact_name=?,mobile=?,phone=?,route_text=?,settlement_method=?,version=version+1,updated_by=?,updated_at=? WHERE id=? AND version=?",r.customerCode(),r.shortName(),blankToNull(r.contactName()),blankToNull(r.mobile()),blankToNull(r.phone()),blankToNull(r.route()),blankToNull(r.settlementMethod()),userId(auth),LocalDateTime.now(),id,r.version()); }
-        catch(DataIntegrityViolationException e){throw conflict("客户编号已存在");}
+        catch(DataIntegrityViolationException e){throw conflict("Customer code already exists");}
         requireChanged(changed); return ApiResponse.success(null);
     }
 
@@ -47,12 +47,12 @@ public class MasterDataWriteController {
     @PostMapping("/products")
     public ApiResponse<Map<String,Object>> createProduct(@Valid @RequestBody ProductRequest r,Authentication auth){
         long userId=userId(auth);LocalDateTime now=LocalDateTime.now();GeneratedKeyHolder keys=new GeneratedKeyHolder();boolean saleable=categorySaleable(r.categoryId());
-        try {jdbc.update(c->{PreparedStatement ps=c.prepareStatement("INSERT INTO product_sku(sku_code,product_name,specification,color,sales_unit,package_spec,package_unit,wholesale_price,retail_price,total_stock,stock_lower_limit,last_purchase_price,category_id,saleable,classification_status,enabled,version,created_by,created_at,updated_by,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,'CONFIRMED',1,0,?,?,?,?)",Statement.RETURN_GENERATED_KEYS);int i=1;ps.setString(i++,r.skuCode());ps.setString(i++,r.productName());ps.setString(i++,blankToNull(r.specification()));ps.setString(i++,blankToNull(r.color()));ps.setString(i++,r.salesUnit());ps.setBigDecimal(i++,r.packageSpec());ps.setString(i++,blankToNull(r.packageUnit()));ps.setBigDecimal(i++,r.wholesalePrice());ps.setBigDecimal(i++,r.retailPrice());ps.setBigDecimal(i++,zero(r.totalStock()));ps.setBigDecimal(i++,zero(r.stockLowerLimit()));ps.setBigDecimal(i++,r.lastPurchasePrice());ps.setLong(i++,r.categoryId());ps.setBoolean(i++,saleable);ps.setLong(i++,userId);ps.setObject(i++,now);ps.setLong(i++,userId);ps.setObject(i,now);return ps;},keys);}catch(DataIntegrityViolationException e){throw conflict("货品编号已存在");}
+        try {jdbc.update(c->{PreparedStatement ps=c.prepareStatement("INSERT INTO product_sku(sku_code,product_name,specification,color,sales_unit,package_spec,package_unit,wholesale_price,retail_price,total_stock,stock_lower_limit,last_purchase_price,category_id,saleable,classification_status,enabled,version,created_by,created_at,updated_by,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,'CONFIRMED',1,0,?,?,?,?)",Statement.RETURN_GENERATED_KEYS);int i=1;ps.setString(i++,r.skuCode());ps.setString(i++,r.productName());ps.setString(i++,blankToNull(r.specification()));ps.setString(i++,blankToNull(r.color()));ps.setString(i++,r.salesUnit());ps.setBigDecimal(i++,r.packageSpec());ps.setString(i++,blankToNull(r.packageUnit()));ps.setBigDecimal(i++,r.wholesalePrice());ps.setBigDecimal(i++,r.retailPrice());ps.setBigDecimal(i++,zero(r.totalStock()));ps.setBigDecimal(i++,zero(r.stockLowerLimit()));ps.setBigDecimal(i++,r.lastPurchasePrice());ps.setLong(i++,r.categoryId());ps.setBoolean(i++,saleable);ps.setLong(i++,userId);ps.setObject(i++,now);ps.setLong(i++,userId);ps.setObject(i,now);return ps;},keys);}catch(DataIntegrityViolationException e){throw conflict("Product code already exists");}
         return ApiResponse.success(Map.of("id",keys.getKey().longValue()));
     }
 
     @PutMapping("/products/{id}")
-    public ApiResponse<Void> updateProduct(@PathVariable long id,@Valid @RequestBody ProductRequest r,Authentication auth){boolean saleable=categorySaleable(r.categoryId());int changed;try{changed=jdbc.update("UPDATE product_sku SET sku_code=?,product_name=?,specification=?,color=?,sales_unit=?,package_spec=?,package_unit=?,wholesale_price=?,retail_price=?,stock_lower_limit=?,last_purchase_price=?,category_id=?,saleable=?,classification_status='CONFIRMED',version=version+1,updated_by=?,updated_at=? WHERE id=? AND version=?",r.skuCode(),r.productName(),blankToNull(r.specification()),blankToNull(r.color()),r.salesUnit(),r.packageSpec(),blankToNull(r.packageUnit()),r.wholesalePrice(),r.retailPrice(),zero(r.stockLowerLimit()),r.lastPurchasePrice(),r.categoryId(),saleable,userId(auth),LocalDateTime.now(),id,r.version());}catch(DataIntegrityViolationException e){throw conflict("货品编号已存在");}requireChanged(changed);return ApiResponse.success(null);}
+    public ApiResponse<Void> updateProduct(@PathVariable long id,@Valid @RequestBody ProductRequest r,Authentication auth){boolean saleable=categorySaleable(r.categoryId());int changed;try{changed=jdbc.update("UPDATE product_sku SET sku_code=?,product_name=?,specification=?,color=?,sales_unit=?,package_spec=?,package_unit=?,wholesale_price=?,retail_price=?,stock_lower_limit=?,last_purchase_price=?,category_id=?,saleable=?,classification_status='CONFIRMED',version=version+1,updated_by=?,updated_at=? WHERE id=? AND version=?",r.skuCode(),r.productName(),blankToNull(r.specification()),blankToNull(r.color()),r.salesUnit(),r.packageSpec(),blankToNull(r.packageUnit()),r.wholesalePrice(),r.retailPrice(),zero(r.stockLowerLimit()),r.lastPurchasePrice(),r.categoryId(),saleable,userId(auth),LocalDateTime.now(),id,r.version());}catch(DataIntegrityViolationException e){throw conflict("Product code already exists");}requireChanged(changed);return ApiResponse.success(null);}
 
     @PatchMapping("/products/{id}/enabled")
     public ApiResponse<Void> setProductEnabled(@PathVariable long id,@Valid @RequestBody EnabledRequest r,Authentication auth){requireChanged(jdbc.update("UPDATE product_sku SET enabled=?,version=version+1,updated_by=?,updated_at=? WHERE id=? AND version=?",r.enabled(),userId(auth),LocalDateTime.now(),id,r.version()));return ApiResponse.success(null);}
@@ -61,7 +61,7 @@ public class MasterDataWriteController {
     public ApiResponse<Map<String,Object>> createRoute(@Valid @RequestBody RouteRequest r) {
         GeneratedKeyHolder keys=new GeneratedKeyHolder();
         try { jdbc.update(c->{PreparedStatement ps=c.prepareStatement("INSERT INTO route(route_code,route_name,enabled,remark) VALUES(?,?,1,?)",Statement.RETURN_GENERATED_KEYS);ps.setString(1,r.code().trim());ps.setString(2,r.name().trim());ps.setString(3,blankToNull(r.remark()));return ps;},keys); }
-        catch(DataIntegrityViolationException e){throw conflict("路线编号已存在");}
+        catch(DataIntegrityViolationException e){throw conflict("Route code already exists");}
         return ApiResponse.success(Map.of("id",keys.getKey().longValue()));
     }
 
@@ -69,7 +69,7 @@ public class MasterDataWriteController {
     public ApiResponse<Map<String,Object>> createVehicle(@Valid @RequestBody VehicleRequest r) {
         GeneratedKeyHolder keys=new GeneratedKeyHolder();
         try { jdbc.update(c->{PreparedStatement ps=c.prepareStatement("INSERT INTO vehicle(vehicle_code,plate_no,enabled,remark) VALUES(?,?,1,?)",Statement.RETURN_GENERATED_KEYS);ps.setString(1,r.code().trim());ps.setString(2,blankToNull(r.plateNo()));ps.setString(3,blankToNull(r.remark()));return ps;},keys); }
-        catch(DataIntegrityViolationException e){throw conflict("车辆编号或车牌已存在");}
+        catch(DataIntegrityViolationException e){throw conflict("Vehicle code or license plate already exists");}
         return ApiResponse.success(Map.of("id",keys.getKey().longValue()));
     }
 
@@ -77,13 +77,13 @@ public class MasterDataWriteController {
     public ApiResponse<Map<String,Object>> createEmployee(@Valid @RequestBody EmployeeRequest r,Authentication auth) {
         long uid=userId(auth);LocalDateTime now=LocalDateTime.now();GeneratedKeyHolder keys=new GeneratedKeyHolder();
         try { jdbc.update(c->{PreparedStatement ps=c.prepareStatement("INSERT INTO employee(employee_code,employee_name,phone,enabled,version,created_by,created_at,updated_by,updated_at) VALUES(?,?,?,1,0,?,?,?,?)",Statement.RETURN_GENERATED_KEYS);ps.setString(1,r.code().trim());ps.setString(2,r.name().trim());ps.setString(3,blankToNull(r.phone()));ps.setLong(4,uid);ps.setObject(5,now);ps.setLong(6,uid);ps.setObject(7,now);return ps;},keys); }
-        catch(DataIntegrityViolationException e){throw conflict("员工编号已存在");}
+        catch(DataIntegrityViolationException e){throw conflict("Employee code already exists");}
         return ApiResponse.success(Map.of("id",keys.getKey().longValue()));
     }
 
     private long userId(Authentication auth){Long id=jdbc.queryForObject("SELECT id FROM sys_user WHERE username=?",Long.class,auth.getName());if(id==null)throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);return id;}
-    private boolean categorySaleable(Long categoryId){var rows=jdbc.query("SELECT COALESCE(c.saleable_default,p.saleable_default,1),c.parent_id FROM product_category c LEFT JOIN product_category p ON p.id=c.parent_id WHERE c.id=? AND c.enabled=1",(rs,n)->Map.of("saleable",rs.getBoolean(1),"parentId",rs.getObject(2)==null?0L:rs.getLong(2)),categoryId);if(rows.isEmpty()||((Number)rows.get(0).get("parentId")).longValue()==0)throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,"请选择有效的货物小类");return (boolean)rows.get(0).get("saleable");}
-    private static void requireChanged(int changed){if(changed!=1)throw conflict("资料已被其他人修改，请刷新后重试");}
+    private boolean categorySaleable(Long categoryId){var rows=jdbc.query("SELECT COALESCE(c.saleable_default,p.saleable_default,1),c.parent_id FROM product_category c LEFT JOIN product_category p ON p.id=c.parent_id WHERE c.id=? AND c.enabled=1",(rs,n)->Map.of("saleable",rs.getBoolean(1),"parentId",rs.getObject(2)==null?0L:rs.getLong(2)),categoryId);if(rows.isEmpty()||((Number)rows.get(0).get("parentId")).longValue()==0)throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,"Select a valid product subcategory");return (boolean)rows.get(0).get("saleable");}
+    private static void requireChanged(int changed){if(changed!=1)throw conflict("Record was modified by another user; refresh and try again");}
     private static ResponseStatusException conflict(String message){return new ResponseStatusException(HttpStatus.CONFLICT,message);}
     private static String blankToNull(String value){return value==null||value.isBlank()?null:value.trim();}
     private static BigDecimal zero(BigDecimal value){return value==null?BigDecimal.ZERO:value;}
