@@ -75,28 +75,28 @@ class PurchaseControllerTest {
 
     @Test void orderReceiptRequiresPositiveQuantityAndBothOrderLinks(){
         assertThatThrownBy(()->PurchaseController.validateReceiptLineShape(10L,20L,"ORDER_RECEIPT",new java.math.BigDecimal("-1")))
-            .isInstanceOf(ResponseStatusException.class).hasMessageContaining("加库存数量必须大于0");
+            .isInstanceOf(ResponseStatusException.class).hasMessageContaining("Stock-in quantity must be greater than 0");
         assertThatThrownBy(()->PurchaseController.validateReceiptLineShape(10L,null,"ORDER_RECEIPT",java.math.BigDecimal.ONE))
-            .isInstanceOf(ResponseStatusException.class).hasMessageContaining("必须关联采购订单及订单明细");
+            .isInstanceOf(ResponseStatusException.class).hasMessageContaining("must be linked to a purchase order and order line");
         assertThatThrownBy(()->PurchaseController.validateReceiptLineShape(null,20L,"ORDER_RECEIPT",java.math.BigDecimal.ONE))
-            .isInstanceOf(ResponseStatusException.class).hasMessageContaining("必须关联采购订单及订单明细");
+            .isInstanceOf(ResponseStatusException.class).hasMessageContaining("must be linked to a purchase order and order line");
     }
 
     @Test void orderReturnRequiresNegativeQuantityAndBothOrderLinks(){
         assertThatThrownBy(()->PurchaseController.validateReceiptLineShape(10L,20L,"ORDER_RETURN",java.math.BigDecimal.ONE))
-            .isInstanceOf(ResponseStatusException.class).hasMessageContaining("减库存数量必须小于0");
+            .isInstanceOf(ResponseStatusException.class).hasMessageContaining("Stock-out quantity must be less than 0");
         assertThatThrownBy(()->PurchaseController.validateReceiptLineShape(10L,null,"ORDER_RETURN",new java.math.BigDecimal("-1")))
-            .isInstanceOf(ResponseStatusException.class).hasMessageContaining("必须关联采购订单及订单明细");
+            .isInstanceOf(ResponseStatusException.class).hasMessageContaining("must be linked to a purchase order and order line");
     }
 
     @Test void unlinkedReturnCannotBeSubmitted(){
         assertThatThrownBy(()->PurchaseController.validateReceiptLineShape(10L,null,"UNLINKED_RETURN",new java.math.BigDecimal("-3")))
-            .isInstanceOf(ResponseStatusException.class).hasMessageContaining("业务类型无效");
+            .isInstanceOf(ResponseStatusException.class).hasMessageContaining("Invalid purchase-receipt line business type");
     }
 
     @Test void invalidOrHistoricalBusinessTypeCannotBeSubmitted(){
         assertThatThrownBy(()->PurchaseController.validateReceiptLineShape(10L,20L,"HISTORICAL_UNCLASSIFIED",java.math.BigDecimal.ONE))
-            .isInstanceOf(ResponseStatusException.class).hasMessageContaining("业务类型无效");
+            .isInstanceOf(ResponseStatusException.class).hasMessageContaining("Invalid purchase-receipt line business type");
     }
 
     @Test void stalePurchaseOrderDraftCannotBeDeleted(){
@@ -107,7 +107,7 @@ class PurchaseControllerTest {
 
         assertThatThrownBy(()->controller.deleteOrder(1,2))
             .isInstanceOf(ResponseStatusException.class)
-            .hasMessageContaining("已被修改");
+            .hasMessageContaining("has been modified");
         verify(jdbc,never()).update(org.mockito.ArgumentMatchers.startsWith("DELETE"),any(Object[].class));
     }
 
@@ -119,7 +119,7 @@ class PurchaseControllerTest {
 
         assertThatThrownBy(()->controller.deleteOrder(1,2))
             .isInstanceOf(ResponseStatusException.class)
-            .hasMessageContaining("只有未打印、未完成");
+            .hasMessageContaining("Only unprinted, incomplete");
     }
 
     @Test void purchaseOrderWithReceiptHistoryCannotBeDeleted(){
@@ -132,7 +132,7 @@ class PurchaseControllerTest {
 
         assertThatThrownBy(()->controller.deleteOrder(1,2))
             .isInstanceOf(ResponseStatusException.class)
-            .hasMessageContaining("已有收货单记录");
+            .hasMessageContaining("with receipt records");
         verify(jdbc,never()).update(org.mockito.ArgumentMatchers.startsWith("DELETE"),any(Object[].class));
     }
 
@@ -142,9 +142,9 @@ class PurchaseControllerTest {
             .thenReturn(java.util.Collections.singletonList(new Object[]{"APPROVED",2,null}));
         PurchaseController controller=new PurchaseController(jdbc);
 
-        assertThatThrownBy(()->controller.voidReceipt(1,new PurchaseController.VersionReason(2,"测试"),null))
+        assertThatThrownBy(()->controller.voidReceipt(1,new PurchaseController.VersionReason(2,"Test"),null))
             .isInstanceOf(ResponseStatusException.class)
-            .hasMessageContaining("只有未审核、未打印");
+            .hasMessageContaining("Only unapproved, unprinted");
     }
 
     @Test void staleReceiptDraftCannotOverwriteNewerSavedVersion(){
@@ -154,7 +154,7 @@ class PurchaseControllerTest {
 
         assertThatThrownBy(()->controller.updateReceipt(1,request,null))
             .isInstanceOf(ResponseStatusException.class)
-            .hasMessageContaining("已被修改，请刷新后重试");
+            .hasMessageContaining("has been modified; refresh and try again");
     }
 
     @Test void approvedReceiptCannotBeEditedAgain(){
@@ -164,7 +164,7 @@ class PurchaseControllerTest {
 
         assertThatThrownBy(()->controller.updateReceipt(1,request,null))
             .isInstanceOf(ResponseStatusException.class)
-            .hasMessageContaining("只有未打印的收货单草稿可以修改");
+            .hasMessageContaining("Only unprinted draft receipts can be edited");
     }
 
     @Test
@@ -196,23 +196,23 @@ class PurchaseControllerTest {
                 when(rs.getString(5)).thenReturn("ORDER_RECEIPT");
                 return List.of(mapper.mapRow(rs,0));
             }
-            throw new AssertionError("未处理的查询："+sql);
+            throw new AssertionError("Unhandled query: "+sql);
         });
         when(jdbc.queryForObject(anyString(),any(Class.class),any(Object[].class))).thenAnswer(invocation->{
             String sql=invocation.getArgument(0);
             if(sql.startsWith("SELECT total_stock")) return new java.math.BigDecimal("8");
             if(sql.startsWith("SELECT id FROM sys_user")) return 9L;
-            throw new AssertionError("未处理的单值查询："+sql);
+            throw new AssertionError("Unhandled scalar query: "+sql);
         });
         when(jdbc.update(org.mockito.ArgumentMatchers.contains("INSERT INTO inventory_movement"),any(Object[].class)))
-            .thenThrow(new RuntimeException("模拟采购库存流水写入失败"));
+            .thenThrow(new RuntimeException("Simulated purchase inventory-movement insert failure"));
         Authentication auth=mock(Authentication.class);
         when(auth.getName()).thenReturn("admin");
         PurchaseController controller=new PurchaseController(jdbc);
 
         assertThatThrownBy(()->controller.approveReceipt(1,new PurchaseController.VersionOnly(0),auth))
             .isInstanceOf(RuntimeException.class)
-            .hasMessageContaining("模拟采购库存流水写入失败");
+            .hasMessageContaining("Simulated purchase inventory-movement insert failure");
 
         verify(jdbc).update(org.mockito.ArgumentMatchers.contains("UPDATE product_sku SET total_stock=?"),any(Object[].class));
         verify(jdbc).update(org.mockito.ArgumentMatchers.contains("INSERT INTO inventory_movement"),any(Object[].class));
