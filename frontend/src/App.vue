@@ -4,7 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 
 const route=useRoute(),router=useRouter()
 const isLogin=computed(()=>route.path==='/login')
-const displayName=computed(()=>{route.path;const name=localStorage.getItem('displayName');return name==='系统管理员'?'System Administrator':name||'Current User'})
+const displayName=computed(()=>{route.path;return localStorage.getItem('displayName')||'Current User'})
 const role=computed(()=>{route.path;return localStorage.getItem('role')||'ADMIN'})
 const now=ref(new Date());let clockTimer:number|undefined
 const dateTime=computed(()=>new Intl.DateTimeFormat('en-CA',{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).format(now.value).replace(',',''))

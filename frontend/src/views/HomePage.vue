@@ -16,7 +16,7 @@ type OwnerDashboard = {
 const router = useRouter()
 const role = localStorage.getItem('role') || 'ADMIN'
 const storedDisplayName = localStorage.getItem('displayName')
-const displayName = storedDisplayName === '系统管理员' ? 'System Administrator' : storedDisplayName || 'Current User'
+const displayName = storedDisplayName || 'Current User'
 const loading = ref(false)
 const loadError = ref('')
 const dashboard = ref<OwnerDashboard|null>(null)

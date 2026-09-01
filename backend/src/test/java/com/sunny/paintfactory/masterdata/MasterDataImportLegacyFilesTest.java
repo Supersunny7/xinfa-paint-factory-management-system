@@ -19,13 +19,13 @@ class MasterDataImportLegacyFilesTest {
 
     static Stream<Case> legacyFiles() {
         return Stream.of(
-            new Case("PRODUCT_CATEGORY", "货品类别.xlsx", 20, 0),
-            new Case("ROUTE", "路线资料.xlsx", 41, 0),
-            new Case("EMPLOYEE_TYPE", "员工类别.xlsx", 9, 0),
-            new Case("DEPARTMENT", "部门资料.xlsx", 4, 0),
-            new Case("SUPPLIER", "供应商资料.xlsx", 91, 0),
-            new Case("EMPLOYEE", "员工资料.xlsx", 94, 4),
-            new Case("VEHICLE", "车辆资料.xlsx", 28, 0)
+            new Case("PRODUCT_CATEGORY", "\u8d27\u54c1\u7c7b\u522b.xlsx", 20, 0),
+            new Case("ROUTE", "\u8def\u7ebf\u8d44\u6599.xlsx", 41, 0),
+            new Case("EMPLOYEE_TYPE", "\u5458\u5de5\u7c7b\u522b.xlsx", 9, 0),
+            new Case("DEPARTMENT", "\u90e8\u95e8\u8d44\u6599.xlsx", 4, 0),
+            new Case("SUPPLIER", "\u4f9b\u5e94\u5546\u8d44\u6599.xlsx", 91, 0),
+            new Case("EMPLOYEE", "\u5458\u5de5\u8d44\u6599.xlsx", 94, 4),
+            new Case("VEHICLE", "\u8f66\u8f86\u8d44\u6599.xlsx", 28, 0)
         );
     }
 
@@ -33,9 +33,9 @@ class MasterDataImportLegacyFilesTest {
     @MethodSource("legacyFiles")
     void previewsRealLegacyWorkbook(Case sample) throws Exception {
         String directory = System.getProperty("legacy.data.dir", "");
-        Assumptions.assumeTrue(!directory.isBlank(), "仅在提供 legacy.data.dir 时运行真实旧系统文件测试");
+        Assumptions.assumeTrue(!directory.isBlank(), "Real legacy-file tests run only when legacy.data.dir is provided");
         Path path = Path.of(directory, sample.filename());
-        Assumptions.assumeTrue(Files.exists(path), "旧系统导出文件不存在");
+        Assumptions.assumeTrue(Files.exists(path), "Legacy export file does not exist");
         var file = new MockMultipartFile("file", sample.filename(),
             "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", Files.readAllBytes(path));
 
