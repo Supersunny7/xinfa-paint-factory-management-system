@@ -35,11 +35,11 @@ public class PurchaseLedgerController {
         @RequestParam(defaultValue = "date") String sortBy,
         @RequestParam(defaultValue = "asc") String sortDirection) {
         if (dateTo.isBefore(dateFrom)) {
-            throw new IllegalArgumentException("结束日期不能早于开始日期");
+            throw new IllegalArgumentException("The end date cannot be earlier than the start date");
         }
         List<String> selectedTypes = selectedTypes(businessType);
         if (selectedTypes.stream().anyMatch(type -> !List.of("RECEIPT", "RETURN").contains(type))) {
-            throw new IllegalArgumentException("采购流水类型无效");
+            throw new IllegalArgumentException("Invalid purchase-ledger transaction type");
         }
 
         StringBuilder where = new StringBuilder(" WHERE r.status='APPROVED' AND r.receipt_date>=? AND r.receipt_date<=?");
@@ -122,10 +122,10 @@ public class PurchaseLedgerController {
 
     static String businessTypeName(String type) {
         return switch (type) {
-            case "ORDER_RETURN" -> "采购减数";
-            case "UNLINKED_RETURN" -> "历史订单外减数";
-            case "HISTORICAL_UNCLASSIFIED" -> "历史未分类";
-            default -> "采购收货";
+            case "ORDER_RETURN" -> "Purchase Reduction";
+            case "UNLINKED_RETURN" -> "Historical Unlinked Reduction";
+            case "HISTORICAL_UNCLASSIFIED" -> "Historical Unclassified";
+            default -> "Purchase Receipt";
         };
     }
 

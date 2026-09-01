@@ -6,11 +6,11 @@ import org.junit.jupiter.api.Test;
 
 class InventoryLedgerControllerTest {
     @Test void mapsStockChangingEventsToBusinessLabels() {
-        assertEquals("采购收货", InventoryLedgerController.documentType("PURCHASE_RECEIPT", "PURCHASE_RECEIPT"));
-        assertEquals("采购减数", InventoryLedgerController.documentType("PURCHASE_RETURN", "PURCHASE_RECEIPT"));
-        assertEquals("销售出库", InventoryLedgerController.documentType("SALE_PRINT", "SALES_ORDER_PRINT"));
-        assertEquals("销售退货入仓", InventoryLedgerController.documentType("SALES_RETURN", "RETURN_WAREHOUSE"));
-        assertEquals("库存盘点/调整", InventoryLedgerController.documentType("ADJUSTMENT", "STOCK_TAKE_IMPORT"));
+        assertEquals("Purchase Receipt", InventoryLedgerController.documentType("PURCHASE_RECEIPT", "PURCHASE_RECEIPT"));
+        assertEquals("Purchase Reduction", InventoryLedgerController.documentType("PURCHASE_RETURN", "PURCHASE_RECEIPT"));
+        assertEquals("Sales Outbound", InventoryLedgerController.documentType("SALE_PRINT", "SALES_ORDER_PRINT"));
+        assertEquals("Sales Return Warehousing", InventoryLedgerController.documentType("SALES_RETURN", "RETURN_WAREHOUSE"));
+        assertEquals("Stock Count / Adjustment", InventoryLedgerController.documentType("ADJUSTMENT", "STOCK_TAKE_IMPORT"));
     }
 
     @Test void expandsCheckedBusinessTypes() {

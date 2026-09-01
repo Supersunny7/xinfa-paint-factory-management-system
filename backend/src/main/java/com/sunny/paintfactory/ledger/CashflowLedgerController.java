@@ -33,7 +33,7 @@ public class CashflowLedgerController {
         @RequestParam(defaultValue = "") String voidStatus,
         @RequestParam(defaultValue = "date") String sortBy,
         @RequestParam(defaultValue = "asc") String sortDirection) {
-        if (dateTo.isBefore(dateFrom)) throw new IllegalArgumentException("结束日期不能早于开始日期");
+        if (dateTo.isBefore(dateFrom)) throw new IllegalArgumentException("The end date cannot be earlier than the start date");
         StringBuilder where = new StringBuilder(" WHERE e.expense_date>=? AND e.expense_date<=?");
         List<Object> args = new ArrayList<>(List.of(dateFrom, dateTo));
         if (!documentNo.isBlank()) { where.append(" AND e.expense_no LIKE ?"); args.add("%" + documentNo.trim() + "%"); }
@@ -80,7 +80,7 @@ public class CashflowLedgerController {
     @GetMapping("/{id}/lines")
     public ApiResponse<List<Map<String, Object>>> lines(@PathVariable long id) {
         Integer count=jdbc.queryForObject("SELECT COUNT(*) FROM other_expense WHERE id=?",Integer.class,id);
-        if(count==null||count==0)throw new ResponseStatusException(HttpStatus.NOT_FOUND,"未找到其它支出单");
+        if(count==null||count==0)throw new ResponseStatusException(HttpStatus.NOT_FOUND,"Other-expense document not found");
         return ApiResponse.success(jdbc.query("SELECT line_no,category_code,category_name_snapshot,COALESCE(summary,''),amount FROM other_expense_item WHERE other_expense_id=? ORDER BY line_no",(rs,n)->{
             Map<String,Object> row=new LinkedHashMap<>();row.put("lineNo",rs.getInt(1));row.put("categoryCode",rs.getString(2));row.put("categoryName",rs.getString(3));row.put("summary",rs.getString(4));row.put("amount",rs.getBigDecimal(5));return row;
         },id));

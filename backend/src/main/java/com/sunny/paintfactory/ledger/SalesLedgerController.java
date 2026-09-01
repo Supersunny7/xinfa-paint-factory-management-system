@@ -33,7 +33,7 @@ public class SalesLedgerController {
         @RequestParam(defaultValue = "") String salesperson,
         @RequestParam(defaultValue = "date") String sortBy,
         @RequestParam(defaultValue = "asc") String sortDirection) {
-        if (dateTo.isBefore(dateFrom)) throw new IllegalArgumentException("结束日期不能早于开始日期");
+        if (dateTo.isBefore(dateFrom)) throw new IllegalArgumentException("The end date cannot be earlier than the start date");
         List<String> businessTypes = selectedTypes(businessType);
 
         StringBuilder where = new StringBuilder(" WHERE q.order_date>=? AND q.order_date<=?");
@@ -119,13 +119,13 @@ public class SalesLedgerController {
     }
 
     static String lineTypeName(String businessType, String type) {
-        if ("RETURN".equals(businessType)) return "销售退货";
+        if ("RETURN".equals(businessType)) return "Sales Return";
         return switch (type) {
-            case "GIFT" -> "赠品";
-            case "DISCOUNT_ADJUSTMENT" -> "折扣调整";
+            case "GIFT" -> "Gift";
+            case "DISCOUNT_ADJUSTMENT" -> "Discount Adjustment";
             case "CASH_ADJUSTMENT" -> "Cash Adjustment";
-            case "OTHER_ADJUSTMENT" -> "其它调整";
-            default -> "销售出库";
+            case "OTHER_ADJUSTMENT" -> "Other Adjustment";
+            default -> "Sales Outbound";
         };
     }
 
@@ -133,7 +133,7 @@ public class SalesLedgerController {
         if (value == null || value.isBlank()) return List.of();
         List<String> values = List.of(value.split(","));
         if (values.stream().anyMatch(x -> !List.of("SALE", "RETURN").contains(x))) {
-            throw new IllegalArgumentException("销售流水类型无效");
+            throw new IllegalArgumentException("Invalid sales-ledger transaction type");
         }
         return values;
     }

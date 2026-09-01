@@ -15,6 +15,6 @@ class InventoryControllerTest {
     }
 
     @Test void rejectsNegativeInventory() {
-        assertThatThrownBy(()->InventoryController.calculateAfter(InventoryController.MovementType.OUTBOUND,new BigDecimal("2"),new BigDecimal("3"))).isInstanceOf(ResponseStatusException.class).hasMessageContaining("出库数量不能大于当前库存");
+        assertThatThrownBy(()->InventoryController.calculateAfter(InventoryController.MovementType.OUTBOUND,new BigDecimal("2"),new BigDecimal("3"))).isInstanceOf(ResponseStatusException.class).hasMessageContaining("Outbound quantity cannot exceed the current stock");
     }
 }

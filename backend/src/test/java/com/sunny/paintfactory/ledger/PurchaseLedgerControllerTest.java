@@ -7,10 +7,10 @@ import org.junit.jupiter.api.Test;
 class PurchaseLedgerControllerTest {
     @Test
     void labelsReceiptAndReturn() {
-        assertEquals("采购收货", PurchaseLedgerController.businessTypeName("ORDER_RECEIPT"));
-        assertEquals("采购减数", PurchaseLedgerController.businessTypeName("ORDER_RETURN"));
-        assertEquals("历史订单外减数", PurchaseLedgerController.businessTypeName("UNLINKED_RETURN"));
-        assertEquals("历史未分类", PurchaseLedgerController.businessTypeName("HISTORICAL_UNCLASSIFIED"));
+        assertEquals("Purchase Receipt", PurchaseLedgerController.businessTypeName("ORDER_RECEIPT"));
+        assertEquals("Purchase Reduction", PurchaseLedgerController.businessTypeName("ORDER_RETURN"));
+        assertEquals("Historical Unlinked Reduction", PurchaseLedgerController.businessTypeName("UNLINKED_RETURN"));
+        assertEquals("Historical Unclassified", PurchaseLedgerController.businessTypeName("HISTORICAL_UNCLASSIFIED"));
     }
 
     @Test

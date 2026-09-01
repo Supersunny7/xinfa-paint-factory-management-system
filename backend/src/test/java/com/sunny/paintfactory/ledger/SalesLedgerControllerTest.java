@@ -6,9 +6,9 @@ import org.junit.jupiter.api.Test;
 
 class SalesLedgerControllerTest {
     @Test void labelsSalesLinesAndActualReturnDocuments() {
-        assertEquals("销售出库", SalesLedgerController.lineTypeName("SALE", "PRODUCT"));
-        assertEquals("赠品", SalesLedgerController.lineTypeName("SALE", "GIFT"));
-        assertEquals("销售退货", SalesLedgerController.lineTypeName("RETURN", "RETURN"));
+        assertEquals("Sales Outbound", SalesLedgerController.lineTypeName("SALE", "PRODUCT"));
+        assertEquals("Gift", SalesLedgerController.lineTypeName("SALE", "GIFT"));
+        assertEquals("Sales Return", SalesLedgerController.lineTypeName("RETURN", "RETURN"));
     }
 
     @Test void supportsCheckboxStyleMultipleTypes() {

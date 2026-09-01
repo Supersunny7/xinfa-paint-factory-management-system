@@ -42,12 +42,12 @@ public class InventoryController {
     public ApiResponse<Map<String,Object>> adjust(@PathVariable long productId,@Valid @RequestBody AdjustmentRequest request,Authentication auth) {
         MovementType type;
         try { type=MovementType.valueOf(request.type()); }
-        catch(IllegalArgumentException e) { throw bad("库存变动类型无效"); }
+        catch(IllegalArgumentException e) { throw bad("Invalid inventory-movement type"); }
         List<BigDecimal> stocks=jdbc.query("SELECT total_stock FROM product_sku WHERE id=? AND enabled=1 FOR UPDATE",(rs,row)->rs.getBigDecimal(1),productId);
-        if(stocks.isEmpty()) throw new ResponseStatusException(HttpStatus.NOT_FOUND,"货品不存在或已停用");
+        if(stocks.isEmpty()) throw new ResponseStatusException(HttpStatus.NOT_FOUND,"The product does not exist or is disabled");
         BigDecimal before=stocks.get(0), after=calculateAfter(type,before,request.quantity());
         BigDecimal change=after.subtract(before);
-        if(change.signum()==0) throw bad("盘点后的库存与当前库存相同，无需调整");
+        if(change.signum()==0) throw bad("The counted stock equals the current stock; no adjustment is required");
         long uid=userId(auth); LocalDateTime now=LocalDateTime.now();
         jdbc.update("UPDATE product_sku SET total_stock=?,version=version+1,updated_by=?,updated_at=? WHERE id=?",after,uid,now,productId);
         jdbc.update("INSERT INTO inventory_movement(product_sku_id,movement_type,quantity_change,before_quantity,after_quantity,reason,created_by,created_at) VALUES(?,?,?,?,?,?,?,?)",productId,type.name(),change,before,after,request.reason().trim(),uid,now);
@@ -55,9 +55,9 @@ public class InventoryController {
     }
 
     static BigDecimal calculateAfter(MovementType type,BigDecimal before,BigDecimal quantity) {
-        if(type!=MovementType.ADJUSTMENT&&quantity.signum()==0) throw bad("入库或出库数量必须大于 0");
+        if(type!=MovementType.ADJUSTMENT&&quantity.signum()==0) throw bad("Inbound or outbound quantity must be greater than zero");
         BigDecimal after=switch(type){case INBOUND->before.add(quantity);case OUTBOUND->before.subtract(quantity);case ADJUSTMENT->quantity;};
-        if(after.signum()<0) throw bad("出库数量不能大于当前库存");
+        if(after.signum()<0) throw bad("Outbound quantity cannot exceed the current stock");
         return after;
     }
 

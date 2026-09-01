@@ -91,7 +91,7 @@ public class DashboardController {
             BigDecimal cost = money(rs.getBigDecimal(6));
             return map("id", rs.getLong(1), "orderNo", rs.getString(2), "printedAt", rs.getTimestamp(3).toLocalDateTime(),
                 "customerName", rs.getString(4), "salesAmount", sales, "estimatedCost", cost,
-                "estimatedGrossProfit", sales.subtract(cost), "printStatus", "已打印");
+                "estimatedGrossProfit", sales.subtract(cost), "printStatus", "Printed");
         }, date);
     }
 

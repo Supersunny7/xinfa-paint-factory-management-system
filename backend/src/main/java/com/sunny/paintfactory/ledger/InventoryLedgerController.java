@@ -30,7 +30,7 @@ public class InventoryLedgerController {
         @RequestParam(defaultValue = "") String referenceNo,
         @RequestParam(defaultValue = "date") String sortBy,
         @RequestParam(defaultValue = "asc") String sortDirection) {
-        if (dateTo.isBefore(dateFrom)) throw new IllegalArgumentException("结束日期不能早于开始日期");
+        if (dateTo.isBefore(dateFrom)) throw new IllegalArgumentException("The end date cannot be earlier than the start date");
 
         StringBuilder where = new StringBuilder(" WHERE m.created_at>=? AND m.created_at<?");
         List<Object> args = new ArrayList<>();
@@ -126,7 +126,7 @@ public class InventoryLedgerController {
                 case "SALES", "SALES_OUTBOUND" -> { result.add("SALE_PRINT"); result.add("REVERSAL"); }
                 case "SALES_RETURN" -> result.add("SALES_RETURN");
                 case "ADJUSTMENT", "STOCK_ADJUSTMENT" -> { result.add("INBOUND"); result.add("OUTBOUND"); result.add("ADJUSTMENT"); }
-                default -> throw new IllegalArgumentException("流水类型无效");
+                default -> throw new IllegalArgumentException("Invalid inventory-movement type");
             }
         }
         return result.stream().distinct().toList();
@@ -134,14 +134,14 @@ public class InventoryLedgerController {
 
     static String documentType(String movementType, String referenceType) {
         return switch (movementType) {
-            case "PURCHASE_RECEIPT" -> "采购收货";
-            case "PURCHASE_RETURN" -> "采购减数";
-            case "SALE_PRINT" -> "销售出库";
-            case "SALES_RETURN" -> "销售退货入仓";
-            case "REVERSAL" -> "出库冲销";
-            case "INBOUND" -> "手工入库";
-            case "OUTBOUND" -> "手工出库";
-            case "ADJUSTMENT" -> "库存盘点/调整";
+            case "PURCHASE_RECEIPT" -> "Purchase Receipt";
+            case "PURCHASE_RETURN" -> "Purchase Reduction";
+            case "SALE_PRINT" -> "Sales Outbound";
+            case "SALES_RETURN" -> "Sales Return Warehousing";
+            case "REVERSAL" -> "Outbound Reversal";
+            case "INBOUND" -> "Manual Inbound";
+            case "OUTBOUND" -> "Manual Outbound";
+            case "ADJUSTMENT" -> "Stock Count / Adjustment";
             default -> referenceType == null || referenceType.isBlank() ? movementType : referenceType;
         };
     }
