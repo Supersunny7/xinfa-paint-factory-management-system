@@ -46,7 +46,7 @@ The English source-only copy has completed localization and automated verificati
 - [x] Add English setup, architecture, business-flow, and testing documentation.
 - [x] Add backend and frontend GitHub Actions workflows.
 - [ ] Decide on a license before publication.
-- [ ] Complete browser acceptance for every business workflow. Login, dashboard, and all 24 routed application pages now open successfully against an isolated English demo database with no visible Chinese text and no browser console warnings or errors. Product and customer demo records render correctly. Purchase filters and the create/cancel dialogs for sales orders, sales returns, return warehousing, dispatch sheets, purchases, and other expenses have passed. Sales-order customer lookup by phone and product lookup by code both passed through real Enter-key interaction. Print Preview controls are present in source and are intentionally record-dependent on list pages; end-to-end save, approval, print confirmation, inventory, and ledger reconciliation still require browser acceptance with linked demo documents. Public-safe desktop screenshots are included. Backend tests, frontend build, and a fresh 23-migration database have passed.
+- [x] Complete browser acceptance for every core business workflow. Login, dashboard, and all 24 routed application pages opened successfully against an isolated English demo database with no visible Chinese text and no browser console warnings or errors. Sales order creation and positioning, phone/code lookup, product entry, Print Preview, first-print stock deduction, purchasing and approved receipt stock-in, sales return and approved return warehousing, other-expense approval and cashflow, dispatch approval, inventory reconciliation, and ledger source-document double-click navigation all passed with linked fictional demo documents. See `docs/BROWSER_ACCEPTANCE_REPORT.md` for evidence. Public-safe desktop screenshots are included. Backend tests, frontend build, and a fresh 23-migration database have passed.
 - [x] Run a final tracked-source language scan, secret review, and Git diff check.
 
 ## Files requiring special review
@@ -64,4 +64,4 @@ The English source-only copy has completed localization and automated verificati
 
 ## Publication recommendation
 
-Keep the GitHub repository private until a license is selected and the final English browser acceptance/screenshots are complete. Then run one last history-aware secret scan before changing visibility.
+Keep the GitHub repository private until a license is selected. Browser acceptance and public-safe screenshots are complete. After the license decision, run one last history-aware secret scan before changing visibility.

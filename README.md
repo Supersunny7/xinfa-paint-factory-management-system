@@ -2,7 +2,7 @@
 
 A full-stack business management application for paint and coatings distribution. This English portfolio edition demonstrates document-based sales, purchasing, dispatch, returns, inventory, expense, and ledger workflows.
 
-> **Publication status:** English private release candidate. Tracked source, tests, migrations, documentation, and demo records have completed the English-language source review. Automated backend and frontend verification passes. Public release still requires a license decision and final browser/screenshot acceptance. See [PUBLICATION_CHECKLIST.md](PUBLICATION_CHECKLIST.md).
+> **Publication status:** English private release candidate. Tracked source, tests, migrations, documentation, demo records, public-safe screenshots, and core browser workflows have completed English acceptance. Automated backend and frontend verification passes. Public release now requires a license decision and one final history-aware secret scan. See [PUBLICATION_CHECKLIST.md](PUBLICATION_CHECKLIST.md) and [docs/BROWSER_ACCEPTANCE_REPORT.md](docs/BROWSER_ACCEPTANCE_REPORT.md).
 
 ## Features
 
