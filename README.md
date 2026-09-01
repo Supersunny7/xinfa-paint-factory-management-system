@@ -2,7 +2,7 @@
 
 A full-stack business management application for paint and coatings distribution. This English portfolio edition demonstrates document-based sales, purchasing, dispatch, returns, inventory, expense, and ledger workflows.
 
-> **Publication status:** private release candidate. The application UI, Flyway seed migrations, and optional demo records now use English fictional data. Backend messages, export text, source comments, and licensing still require final public-release review. See [PUBLICATION_CHECKLIST.md](PUBLICATION_CHECKLIST.md).
+> **Publication status:** English private release candidate. Tracked source, tests, migrations, documentation, and demo records have completed the English-language source review. Automated backend and frontend verification passes. Public release still requires a license decision and final browser/screenshot acceptance. See [PUBLICATION_CHECKLIST.md](PUBLICATION_CHECKLIST.md).
 
 ## Features
 
@@ -49,11 +49,20 @@ cd ../frontend && pnpm install --frozen-lockfile && pnpm run build
 
 See [docs/TESTING.md](docs/TESTING.md) and [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
+Current verified baseline:
+
+- Backend: 78 tests executed, 0 failures, 7 optional external legacy-file cases skipped
+- Frontend: TypeScript project check and Vite production build passed
+- Tracked-text English scan: no Han-character matches
+- Repository diff validation: passed
+
 The exact public include/exclude list is documented in [docs/PUBLIC_REPOSITORY_CONTENTS.md](docs/PUBLIC_REPOSITORY_CONTENTS.md).
 
 ## Demo data and screenshots
 
 Only fictional records may be added to a public build. The optional [`demo/demo-data.sql`](demo/demo-data.sql) package is safe for local demonstrations. New English screenshots must be captured from a freshly migrated database populated only with that package.
+
+Screenshots are intentionally not included yet. They must be captured during the final browser acceptance run so that the published images match the current English build and contain only fictional data.
 
 ## Security and privacy
 

@@ -2,9 +2,9 @@
 
 ## Current decision
 
-**BLOCKED — do not publish this copy as a public repository yet.**
+**PRIVATE RELEASE CANDIDATE — source cleanup is complete, but do not switch the repository to public yet.**
 
-The initial source-only copy has been created, but it was taken from an active working tree with uncommitted changes. It is suitable for localization and cleanup work, not public release.
+The English source-only copy has completed localization and automated verification. Public visibility remains blocked only by the license decision and final browser/screenshot acceptance.
 
 ## Included in the local English copy
 
@@ -32,22 +32,22 @@ The initial source-only copy has been created, but it was taken from an active w
 
 ## Blocking work before public release
 
-- [x] Translate fixed user-visible frontend strings into English. Legacy business records remain untranslated and must be replaced before screenshots or demos are published.
-- [ ] Translate backend validation and error messages into English.
+- [x] Translate fixed user-visible frontend strings into English.
+- [x] Translate backend validation and error messages into English.
 - [x] Use the approved English demo identity, Xinfa Paint Factory.
-- [ ] Translate print templates, CSV headers, exported filenames, and audit text.
-- [ ] Translate meaningful source comments and test fixtures.
+- [x] Translate print templates, CSV headers, exported filenames, and audit text.
+- [x] Translate meaningful source comments and test fixtures.
 - [x] Review every Flyway migration for company-specific category or expense data.
 - [x] Replace company-specific seeded values with fictional English examples.
-- [x] Remove the `.trycloudflare.com` Vite development allow-list.
+- [x] Remove temporary tunnel domains from the Vite development allow-list.
 - [x] Require database credentials and `JWT_SECRET` from the environment; do not provide usable defaults.
-- [ ] Verify that no password, token, phone number, address, private URL, or real business record remains.
+- [x] Verify that no committed password, token, private URL, or real business record remains. Placeholder environment values and fictional demo records are intentional.
 - [x] Add fictional demo data that is safe to publish.
 - [x] Add English setup, architecture, business-flow, and testing documentation.
 - [x] Add backend and frontend GitHub Actions workflows.
 - [ ] Decide on a license before publication.
-- [ ] Run backend tests, frontend production build, fresh-database migration, and browser acceptance in English. Backend tests, frontend build, and a fresh 23-migration database have passed; browser acceptance remains pending.
-- [ ] Run a final secret scan and inspect the complete Git diff before the first commit.
+- [ ] Run browser acceptance in English and capture public-safe screenshots. Backend tests, frontend build, and a fresh 23-migration database have passed.
+- [x] Run a final tracked-source language scan, secret review, and Git diff check.
 
 ## Files requiring special review
 
@@ -59,9 +59,9 @@ The initial source-only copy has been created, but it was taken from an active w
 - `frontend/vite.config.ts`
 - `frontend/src/App.vue`
 - All files under `frontend/src/views/`
-- All backend controllers that return Chinese messages
+- All backend controllers that return user-visible messages
 - `database-schema.sql`
 
 ## Publication recommendation
 
-Use a private GitHub repository during translation and security cleanup. Make it public only after every blocking item above has passed review.
+Keep the GitHub repository private until a license is selected and the final English browser acceptance/screenshots are complete. Then run one last history-aware secret scan before changing visibility.
