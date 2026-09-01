@@ -1,5 +1,5 @@
--- 油漆涂料工厂管理系统：第一阶段 MySQL 8 schema V1
--- 所有业务时间由应用按工厂时区写入；数据库连接统一 utf8mb4。
+-- Paint factory management system: Phase 1 MySQL 8 schema V1.
+-- The application writes all business timestamps in the factory time zone; database connections use utf8mb4.
 
 CREATE DATABASE IF NOT EXISTS paint_factory
   CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
