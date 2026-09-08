@@ -1,28 +1,26 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import LoginPage from '../views/LoginPage.vue'
-import { bilingualPage } from '../bilingualPage'
-
-const CustomerList=bilingualPage(()=>import('../views/CustomerList.vue'),()=>import('../../src-zh/views/CustomerList.vue'))
-const ProductList=bilingualPage(()=>import('../views/ProductList.vue'),()=>import('../../src-zh/views/ProductList.vue'))
-const ProductCatalogPage=bilingualPage(()=>import('../views/ProductCatalogPage.vue'),()=>import('../../src-zh/views/ProductCatalogPage.vue'))
-const SalesOrderPage=bilingualPage(()=>import('../views/SalesOrderPage.vue'),()=>import('../../src-zh/views/SalesOrderPage.vue'))
-const DispatchSheetPage=bilingualPage(()=>import('../views/DispatchSheetPage.vue'),()=>import('../../src-zh/views/DispatchSheetPage.vue'))
-const InventoryReconciliationPage=bilingualPage(()=>import('../views/InventoryReconciliationPage.vue'),()=>import('../../src-zh/views/InventoryReconciliationPage.vue'))
-const MasterDataImportPage=bilingualPage(()=>import('../views/MasterDataImportPage.vue'),()=>import('../../src-zh/views/MasterDataImportPage.vue'))
-const ReferenceDataList=bilingualPage(()=>import('../views/ReferenceDataList.vue'),()=>import('../../src-zh/views/ReferenceDataList.vue'))
-const AuditLogPage=bilingualPage(()=>import('../views/AuditLogPage.vue'),()=>import('../../src-zh/views/AuditLogPage.vue'))
-const UserManagementPage=bilingualPage(()=>import('../views/UserManagementPage.vue'),()=>import('../../src-zh/views/UserManagementPage.vue'))
-const ChangePasswordPage=bilingualPage(()=>import('../views/ChangePasswordPage.vue'),()=>import('../../src-zh/views/ChangePasswordPage.vue'))
-const ProductClassificationPage=bilingualPage(()=>import('../views/ProductClassificationPage.vue'),()=>import('../../src-zh/views/ProductClassificationPage.vue'))
-const HomePage=bilingualPage(()=>import('../views/HomePage.vue'),()=>import('../../src-zh/views/HomePage.vue'))
-const PurchasePage=bilingualPage(()=>import('../views/PurchasePage.vue'),()=>import('../../src-zh/views/PurchasePage.vue'))
-const OtherExpensePage=bilingualPage(()=>import('../views/OtherExpensePage.vue'),()=>import('../../src-zh/views/OtherExpensePage.vue'))
-const InventoryLedgerPage=bilingualPage(()=>import('../views/InventoryLedgerPage.vue'),()=>import('../../src-zh/views/InventoryLedgerPage.vue'))
-const PurchaseLedgerPage=bilingualPage(()=>import('../views/PurchaseLedgerPage.vue'),()=>import('../../src-zh/views/PurchaseLedgerPage.vue'))
-const SalesLedgerPage=bilingualPage(()=>import('../views/SalesLedgerPage.vue'),()=>import('../../src-zh/views/SalesLedgerPage.vue'))
-const CashflowLedgerPage=bilingualPage(()=>import('../views/CashflowLedgerPage.vue'),()=>import('../../src-zh/views/CashflowLedgerPage.vue'))
-const SalesReturnPage=bilingualPage(()=>import('../views/SalesReturnPage.vue'),()=>import('../../src-zh/views/SalesReturnPage.vue'))
-const ReturnWarehousePage=bilingualPage(()=>import('../views/ReturnWarehousePage.vue'),()=>import('../../src-zh/views/ReturnWarehousePage.vue'))
+import CustomerList from '../views/CustomerList.vue'
+import ProductList from '../views/ProductList.vue'
+import ProductCatalogPage from '../views/ProductCatalogPage.vue'
+import SalesOrderPage from '../views/SalesOrderPage.vue'
+import DispatchSheetPage from '../views/DispatchSheetPage.vue'
+import InventoryReconciliationPage from '../views/InventoryReconciliationPage.vue'
+import MasterDataImportPage from '../views/MasterDataImportPage.vue'
+import ReferenceDataList from '../views/ReferenceDataList.vue'
+import AuditLogPage from '../views/AuditLogPage.vue'
+import UserManagementPage from '../views/UserManagementPage.vue'
+import ChangePasswordPage from '../views/ChangePasswordPage.vue'
+import ProductClassificationPage from '../views/ProductClassificationPage.vue'
+import HomePage from '../views/HomePage.vue'
+import PurchasePage from '../views/PurchasePage.vue'
+import OtherExpensePage from '../views/OtherExpensePage.vue'
+import InventoryLedgerPage from '../views/InventoryLedgerPage.vue'
+import PurchaseLedgerPage from '../views/PurchaseLedgerPage.vue'
+import SalesLedgerPage from '../views/SalesLedgerPage.vue'
+import CashflowLedgerPage from '../views/CashflowLedgerPage.vue'
+import SalesReturnPage from '../views/SalesReturnPage.vue'
+import ReturnWarehousePage from '../views/ReturnWarehousePage.vue'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -67,5 +65,3 @@ router.beforeEach((to) => {
 })
 
 export default router
-
-
