@@ -1,11 +1,12 @@
 # Xinfa Paint Factory Management System
 
-A full-stack business management application for paint and coatings distribution. This English portfolio edition demonstrates document-based sales, purchasing, dispatch, returns, inventory, expense, and ledger workflows.
+A full-stack bilingual business management application for paint and coatings distribution. Users can switch between English and Simplified Chinese from the application header. The Chinese interface is preserved from the original factory workflow instead of being translated back from English.
 
 > **Publication status:** Public English release. Tracked source, tests, migrations, documentation, fictional demo records, public-safe screenshots, core browser workflows, MIT licensing, and a full-history sensitive-content review are complete. Anonymous access to the repository, README, and license was verified after publication. See [PUBLICATION_CHECKLIST.md](PUBLICATION_CHECKLIST.md), [docs/BROWSER_ACCEPTANCE_REPORT.md](docs/BROWSER_ACCEPTANCE_REPORT.md), and [docs/PUBLIC_RELEASE_SECURITY_REVIEW.md](docs/PUBLIC_RELEASE_SECURITY_REVIEW.md).
 
 ## Features
 
+- English and Simplified Chinese interfaces with a persistent language selection
 - Authentication and user management
 - Customer, supplier, employee, vehicle, route, and department records
 - Product catalog and product categories
@@ -84,4 +85,4 @@ The screenshots below were captured at a 1920 × 1080 desktop viewport from a fr
 
 ## License
 
-No open-source license has been selected. Until a license is chosen, all rights are reserved.
+This project is released under the [MIT License](LICENSE). See [LICENSE-NOTICE.md](LICENSE-NOTICE.md) for the repository-specific notice.
