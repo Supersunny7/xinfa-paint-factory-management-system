@@ -72,4 +72,14 @@ class SalesOrderControllerTest {
             .isInstanceOf(ResponseStatusException.class)
             .hasMessageContaining("two decimal places");
     }
+
+    @Test void settlementMethodUsesStableValuesAndAcceptsLegacyChineseValues(){
+        assertThat(SalesOrderController.normalizeSettlementMethod("Cash")).isEqualTo("Cash");
+        assertThat(SalesOrderController.normalizeSettlementMethod("现款")).isEqualTo("Cash");
+        assertThat(SalesOrderController.normalizeSettlementMethod("Credit")).isEqualTo("Credit");
+        assertThat(SalesOrderController.normalizeSettlementMethod("挂账")).isEqualTo("Credit");
+        assertThatThrownBy(()->SalesOrderController.normalizeSettlementMethod("Invoice"))
+            .isInstanceOf(ResponseStatusException.class)
+            .hasMessageContaining("Cash or Credit");
+    }
 }

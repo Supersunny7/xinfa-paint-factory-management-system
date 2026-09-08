@@ -12,7 +12,8 @@ const editingOrderId=ref<number|null>(null),editingOrderVersion=ref(0),editingRe
 const printDialog=ref(false)
 const detailPrintDialog=ref(false)
 import { localToday } from '../utils/date'
-const form=reactive<any>({supplierId:null,orderDate:localToday(),receiptDate:localToday(),expectedDeliveryDate:'',deliveryLocation:'',warehouseName:'仓库',settlementMethod:'现款',remark:'',items:[]})
+const form=reactive<any>({supplierId:null,orderDate:localToday(),receiptDate:localToday(),expectedDeliveryDate:'',deliveryLocation:'',warehouseName:'仓库',settlementMethod:'Cash',remark:'',items:[]})
+const normalizeSettlement=(value:string)=>value==='Credit'||value==='挂账'?'Credit':'Cash'
 const query=reactive({dateFrom:localToday(),dateTo:localToday(),status:'',printStatus:'',sortBy:'date',sortDirection:'asc'})
 const total=computed(()=>form.items.reduce((sum:number,x:any)=>sum+Number(x.quantity||0)*Number(x.unitPrice||0),0))
 const receiptItems=computed(()=>form.items.filter((x:any)=>Number(x.quantity)>0))
@@ -149,7 +150,7 @@ async function editReceipt(rowOrId:any){
   if(receipt.status!=='DRAFT'||receipt.printedAt)return ElMessage.warning('只有未审核、未打印的采购收货单草稿可以修改')
   await Promise.all([searchSuppliers(),loadAvailableOrders()]);mode.value='receipt';editingOrderId.value=null;editingOrderVersion.value=0;editingReceiptId.value=receipt.id;editingReceiptVersion.value=receipt.version
   if(!suppliers.value.some((x:any)=>x.id===receipt.supplierId))suppliers.value.unshift({id:receipt.supplierId,code:receipt.supplierCode,name:receipt.supplierName})
-  Object.assign(form,{supplierId:receipt.supplierId,receiptDate:receipt.receiptDate,warehouseName:receipt.warehouseName||'仓库',settlementMethod:receipt.settlementMethod||'现款',remark:receipt.remark||'',items:[]})
+  Object.assign(form,{supplierId:receipt.supplierId,receiptDate:receipt.receiptDate,warehouseName:receipt.warehouseName||'仓库',settlementMethod:normalizeSettlement(receipt.settlementMethod),remark:receipt.remark||'',items:[]})
   if(receipt.purchaseOrderId){
     const orderResponse=await api.get(`/purchases/orders/${receipt.purchaseOrderId}`);const order=orderResponse.data.data;sourceOrder.value=order;receiptOrderId.value=order.id
     const orderItems=new Map(order.items.map((x:any)=>[Number(x.id),x]))
@@ -171,7 +172,7 @@ async function selectPurchase(row:any,type:'order'|'receipt'){
 function selectPurchaseOrder(row:any){return selectPurchase(row,'order')}
 function selectPurchaseReceipt(row:any){return selectPurchase(row,'receipt')}
 async function changePurchaseTab(){inlinePurchase.value=null;selectedPurchaseKey.value='';await load()}
-async function newReceipt(row?:any){mode.value='receipt';sourceOrder.value=null;editingOrderId.value=null;editingOrderVersion.value=0;editingReceiptId.value=null;editingReceiptVersion.value=0;receiptOrderId.value=row?.id||null;Object.assign(form,{supplierId:null,receiptDate:localToday(),warehouseName:'仓库',settlementMethod:'现款',remark:'',items:[]});await Promise.all([searchSuppliers(),loadAvailableOrders()]);if(row){const{data}=await api.get(`/purchases/orders/${row.id}`);if(data.data.draftReceiptId){ElMessage.info(`已定位待审核收货单 ${data.data.draftReceiptNo}`);return editReceipt(data.data.draftReceiptId)}await applySourceOrder(row.id)}dialog.value=true}
+async function newReceipt(row?:any){mode.value='receipt';sourceOrder.value=null;editingOrderId.value=null;editingOrderVersion.value=0;editingReceiptId.value=null;editingReceiptVersion.value=0;receiptOrderId.value=row?.id||null;Object.assign(form,{supplierId:null,receiptDate:localToday(),warehouseName:'仓库',settlementMethod:'Cash',remark:'',items:[]});await Promise.all([searchSuppliers(),loadAvailableOrders()]);if(row){const{data}=await api.get(`/purchases/orders/${row.id}`);if(data.data.draftReceiptId){ElMessage.info(`已定位待审核收货单 ${data.data.draftReceiptNo}`);return editReceipt(data.data.draftReceiptId)}await applySourceOrder(row.id)}dialog.value=true}
 onMounted(load)
 </script>
 
