@@ -13,9 +13,8 @@ public class SystemController {
     @GetMapping("/health")
     public ApiResponse<Map<String, Object>> health() {
         return ApiResponse.success(Map.of(
-            "service", "paint-factory-backend",
-            "status", "UP",
-            "time", OffsetDateTime.now().toString()
-        ));
+                "service", "paint-factory-backend",
+                "status", "UP",
+                "time", OffsetDateTime.now().toString()));
     }
 }

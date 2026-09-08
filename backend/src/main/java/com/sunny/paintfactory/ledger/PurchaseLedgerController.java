@@ -26,14 +26,14 @@ public class PurchaseLedgerController {
 
     @GetMapping
     public ApiResponse<Map<String, Object>> list(
-        @RequestParam LocalDate dateFrom,
-        @RequestParam LocalDate dateTo,
-        @RequestParam(defaultValue = "") String businessType,
-        @RequestParam(defaultValue = "") String keyword,
-        @RequestParam(defaultValue = "") String supplier,
-        @RequestParam(defaultValue = "") String receiptNo,
-        @RequestParam(defaultValue = "date") String sortBy,
-        @RequestParam(defaultValue = "asc") String sortDirection) {
+            @RequestParam LocalDate dateFrom,
+            @RequestParam LocalDate dateTo,
+            @RequestParam(defaultValue = "") String businessType,
+            @RequestParam(defaultValue = "") String keyword,
+            @RequestParam(defaultValue = "") String supplier,
+            @RequestParam(defaultValue = "") String receiptNo,
+            @RequestParam(defaultValue = "date") String sortBy,
+            @RequestParam(defaultValue = "asc") String sortDirection) {
         if (dateTo.isBefore(dateFrom)) {
             throw new IllegalArgumentException("The end date cannot be earlier than the start date");
         }
@@ -42,7 +42,8 @@ public class PurchaseLedgerController {
             throw new IllegalArgumentException("Invalid purchase-ledger transaction type");
         }
 
-        StringBuilder where = new StringBuilder(" WHERE r.status='APPROVED' AND r.receipt_date>=? AND r.receipt_date<=?");
+        StringBuilder where = new StringBuilder(
+                " WHERE r.status='APPROVED' AND r.receipt_date>=? AND r.receipt_date<=?");
         List<Object> args = new ArrayList<>();
         args.add(dateFrom);
         args.add(dateTo);
@@ -51,32 +52,38 @@ public class PurchaseLedgerController {
         }
         if (!keyword.isBlank()) {
             String like = "%" + keyword.trim() + "%";
-            where.append(" AND (i.sku_code_snapshot LIKE ? OR i.product_name_snapshot LIKE ? OR COALESCE(i.specification_snapshot,'') LIKE ?)");
-            args.add(like); args.add(like); args.add(like);
+            where.append(
+                    " AND (i.sku_code_snapshot LIKE ? OR i.product_name_snapshot LIKE ? OR COALESCE(i.specification_snapshot,'') LIKE ?)");
+            args.add(like);
+            args.add(like);
+            args.add(like);
         }
         if (!supplier.isBlank()) {
             String like = "%" + supplier.trim() + "%";
             where.append(" AND (r.supplier_code_snapshot LIKE ? OR r.supplier_name_snapshot LIKE ?)");
-            args.add(like); args.add(like);
+            args.add(like);
+            args.add(like);
         }
         if (!receiptNo.isBlank()) {
             where.append(" AND (r.receipt_no LIKE ? OR COALESCE(o.order_no,'') LIKE ?)");
             String like = "%" + receiptNo.trim() + "%";
-            args.add(like); args.add(like);
+            args.add(like);
+            args.add(like);
         }
 
         String sql = """
-            SELECT i.id,r.receipt_no,r.receipt_date,COALESCE(o.order_no,''),i.business_type,
-                   i.sku_code_snapshot,i.product_name_snapshot,COALESCE(i.specification_snapshot,''),
-                   COALESCE(i.color_snapshot,''),i.purchase_unit_snapshot,i.quantity,i.unit_price,
-                   i.reference_price,i.line_amount,COALESCE(i.remark,''),r.supplier_code_snapshot,
-                   r.supplier_name_snapshot,r.warehouse_name,r.settlement_method,
-                   r.approved_at,u.display_name,COALESCE(r.remark,''),i.line_no,r.id receipt_id
-              FROM purchase_receipt_item i
-              JOIN purchase_receipt r ON r.id=i.purchase_receipt_id
-              LEFT JOIN purchase_order o ON o.id=r.purchase_order_id
-              LEFT JOIN sys_user u ON u.id=r.approved_by
-            """ + where + " ORDER BY "+DocumentSort.sql(sortBy,sortDirection,"r.receipt_date","r.receipt_no","r.id")+",i.line_no ASC";
+                SELECT i.id,r.receipt_no,r.receipt_date,COALESCE(o.order_no,''),i.business_type,
+                       i.sku_code_snapshot,i.product_name_snapshot,COALESCE(i.specification_snapshot,''),
+                       COALESCE(i.color_snapshot,''),i.purchase_unit_snapshot,i.quantity,i.unit_price,
+                       i.reference_price,i.line_amount,COALESCE(i.remark,''),r.supplier_code_snapshot,
+                       r.supplier_name_snapshot,r.warehouse_name,r.settlement_method,
+                       r.approved_at,u.display_name,COALESCE(r.remark,''),i.line_no,r.id receipt_id
+                  FROM purchase_receipt_item i
+                  JOIN purchase_receipt r ON r.id=i.purchase_receipt_id
+                  LEFT JOIN purchase_order o ON o.id=r.purchase_order_id
+                  LEFT JOIN sys_user u ON u.id=r.approved_by
+                """ + where + " ORDER BY "
+                + DocumentSort.sql(sortBy, sortDirection, "r.receipt_date", "r.receipt_no", "r.id") + ",i.line_no ASC";
 
         List<Map<String, Object>> items = jdbc.query(sql, (rs, rowNum) -> {
             Map<String, Object> row = new LinkedHashMap<>();
@@ -111,13 +118,13 @@ public class PurchaseLedgerController {
         BigDecimal quantity = sum(items, "quantity");
         BigDecimal amount = sum(items, "amount");
         BigDecimal receiptQuantity = items.stream().map(x -> (BigDecimal) x.get("quantity"))
-            .filter(x -> x != null && x.signum() > 0).reduce(BigDecimal.ZERO, BigDecimal::add);
+                .filter(x -> x != null && x.signum() > 0).reduce(BigDecimal.ZERO, BigDecimal::add);
         BigDecimal returnQuantity = items.stream().map(x -> (BigDecimal) x.get("quantity"))
-            .filter(x -> x != null && x.signum() < 0).map(BigDecimal::abs).reduce(BigDecimal.ZERO, BigDecimal::add);
+                .filter(x -> x != null && x.signum() < 0).map(BigDecimal::abs).reduce(BigDecimal.ZERO, BigDecimal::add);
         long documentCount = items.stream().map(x -> x.get("receiptNo")).distinct().count();
         return ApiResponse.success(Map.of("items", items, "summary", Map.of(
-            "rowCount", items.size(), "documentCount", documentCount, "netQuantity", quantity,
-            "receiptQuantity", receiptQuantity, "returnQuantity", returnQuantity, "netAmount", amount)));
+                "rowCount", items.size(), "documentCount", documentCount, "netQuantity", quantity,
+                "receiptQuantity", receiptQuantity, "returnQuantity", returnQuantity, "netAmount", amount)));
     }
 
     static String businessTypeName(String type) {
@@ -134,14 +141,14 @@ public class PurchaseLedgerController {
             return List.of();
         }
         return List.of(value.split(",")).stream()
-            .map(String::trim)
-            .filter(type -> !type.isBlank())
-            .distinct()
-            .toList();
+                .map(String::trim)
+                .filter(type -> !type.isBlank())
+                .distinct()
+                .toList();
     }
 
     private static BigDecimal sum(List<Map<String, Object>> items, String key) {
         return items.stream().map(x -> (BigDecimal) x.get(key)).filter(x -> x != null)
-            .reduce(BigDecimal.ZERO, BigDecimal::add);
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 }
